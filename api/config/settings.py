@@ -20,7 +20,7 @@ DOCUMENT_EXTRACTOR = os.environ.get("DOCUMENT_EXTRACTOR", "mock")
 
 NUTRIENT_DWS_API_KEY = os.environ.get("NUTRIENT_DWS_API_KEY", "")
 NUTRIENT_DWS_BASE_URL = os.environ.get(
-    "NUTRIENT_DWS_BASE_URL", "https://api.nutrient.io/dws"
+    "NUTRIENT_DWS_BASE_URL", "https://api.nutrient.io"
 )
 
 # Confidence threshold: any extracted field below this routes the

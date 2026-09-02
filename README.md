@@ -108,7 +108,7 @@ settings (Nutrient key, and optionally the Upstash rate-limit settings).
 |---|---|---|
 | `DOCUMENT_EXTRACTOR` | `mock` or `nutrient` | `mock` |
 | `NUTRIENT_DWS_API_KEY` | Your Nutrient DWS API key | (empty) |
-| `NUTRIENT_DWS_BASE_URL` | Nutrient DWS API base URL | `https://api.nutrient.io/dws` |
+| `NUTRIENT_DWS_BASE_URL` | Nutrient DWS API base URL | `https://api.nutrient.io` |
 | `AUTO_APPROVE_CONFIDENCE_THRESHOLD` | Minimum field confidence to auto-approve | `0.85` |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (optional) | (empty) |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional) | (empty) |
