@@ -6,9 +6,10 @@ interface Props {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
   pendingCount: number;
+  onBrandClick: () => void;
 }
 
-export function TopNav({ mode, onModeChange, pendingCount }: Props) {
+export function TopNav({ mode, onModeChange, pendingCount, onBrandClick }: Props) {
   const t = useTranslations();
 
   const items: Array<{ id: Mode; label: string; icon: typeof MailIcon; badge?: number }> = [
@@ -21,10 +22,10 @@ export function TopNav({ mode, onModeChange, pendingCount }: Props) {
 
   return (
     <header className="topbar">
-      <div className="brand">
+      <button type="button" className="brand" onClick={onBrandClick}>
         <span className="brand-mark" aria-hidden="true" />
         <span className="brand-name">{t.app.title}</span>
-      </div>
+      </button>
       <nav className="mode-tabs" aria-label="Sections">
         {items.map(({ id, label, icon: Icon, badge }) => (
           <button

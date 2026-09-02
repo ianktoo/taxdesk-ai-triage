@@ -3,6 +3,23 @@ export const en = {
     title: "TaxDesk AI",
     pocNotice: "Proof of concept, demo data only",
   },
+  landing: {
+    headline: "Stop opening every attachment by hand.",
+    subhead:
+      "A customer emails in a form, a bill, an ID, sometimes three at once. TaxDesk AI reads what they sent, tells your team what it is, and flags anything it isn't confident about, before a human ever opens the file.",
+    cta: "Try the demo",
+    stepsHeading: "How a request moves through the system",
+    step1Title: "The customer sends it in",
+    step1Body: "A message and its attachments arrive, the same as any support inbox.",
+    step2Title: "Nutrient DWS reads it",
+    step2Body:
+      "Each attachment is classified and its key fields are extracted, with a confidence score per field.",
+    step3Title: "An agent reviews and approves",
+    step3Body:
+      "Clean requests are ready to approve on sight; anything uncertain is flagged with the reason why.",
+    footer:
+      "Document classification and extraction are powered by Nutrient DWS. This is a hackathon demo built for the DevNetwork API + Cloud + AI Hackathon, not a production tax product.",
+  },
   nav: {
     customer: "Customer",
     agent: "Agent queue",

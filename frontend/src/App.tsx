@@ -9,6 +9,7 @@ import {
   type RecordUpdate,
   type TriageResult,
 } from "./client/apiClient";
+import { LandingPage } from "./components/LandingPage";
 import { TopNav } from "./components/TopNav";
 import { ContactSidebar } from "./components/ContactSidebar";
 import { MessagePane } from "./components/MessagePane";
@@ -35,6 +36,8 @@ export interface Ticket {
 
 function AppShell() {
   const t = useTranslations();
+
+  const [entered, setEntered] = useState(false);
 
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
   const [personaLoadError, setPersonaLoadError] = useState<string | null>(null);
@@ -136,9 +139,18 @@ function AppShell() {
     }
   }
 
+  if (!entered) {
+    return <LandingPage onTryDemo={() => setEntered(true)} />;
+  }
+
   return (
     <div className="app-shell">
-      <TopNav mode={mode} onModeChange={setMode} pendingCount={pendingCount} />
+      <TopNav
+        mode={mode}
+        onModeChange={setMode}
+        pendingCount={pendingCount}
+        onBrandClick={() => setEntered(false)}
+      />
 
       <div className="app-body">
         {mode === "customer" && (
