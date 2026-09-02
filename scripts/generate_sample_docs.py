@@ -4,9 +4,12 @@ Run with: python scripts/generate_sample_docs.py
 Regenerates data/sample_docs/*.pdf. No real PII, values match the
 canned extraction data in api/integrations/document_extraction/mock_adapter.py.
 """
+import io
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "data" / "sample_docs"
@@ -32,6 +35,59 @@ def _write_pdf(filename: str, title: str, lines: list[str]):
 
     c.save()
     print(f"wrote {path}")
+
+
+def _write_rough_scan_pdf(filename: str, title: str, lines: list[str]):
+    """Renders the doc as a low-res, noisy, slightly rotated scanned-photo
+    image instead of clean vector text, so a real OCR/extraction API
+    genuinely returns lower confidence on it. Used to give the demo one
+    authentic low-confidence / needs-review moment instead of a faked one.
+    """
+    img_width, img_height = 640, 420
+    image = Image.new("L", (img_width, img_height), color=235)
+    draw = ImageDraw.Draw(image)
+
+    try:
+        title_font = ImageFont.truetype("arial.ttf", 22)
+        body_font = ImageFont.truetype("arial.ttf", 15)
+    except OSError:
+        title_font = ImageFont.load_default()
+        body_font = ImageFont.load_default()
+
+    draw.text((30, 20), title, fill=40, font=title_font)
+    y = 70
+    for line in lines:
+        draw.text((30, y), line, fill=60, font=body_font)
+        y += 28
+
+    image = image.rotate(-4, expand=True, fillcolor=235)
+    image = image.filter(ImageFilter.GaussianBlur(radius=1.6))
+
+    noise = Image.effect_noise(image.size, 28).convert("L")
+    image = Image.blend(image, noise, alpha=0.12)
+
+    image = image.resize((image.width // 2, image.height // 2)).resize(image.size)
+
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", quality=55)
+    buffer.seek(0)
+
+    path = OUT_DIR / filename
+    c = canvas.Canvas(str(path), pagesize=letter)
+    page_width, page_height = letter
+    display_width = page_width - 144
+    display_height = display_width * image.height / image.width
+    c.drawImage(
+        ImageReader(buffer),
+        72,
+        page_height - 72 - display_height,
+        width=display_width,
+        height=display_height,
+    )
+    c.setFont("Helvetica-Oblique", 8)
+    c.drawString(72, 40, "Mock document generated for demo purposes only. No real PII.")
+    c.save()
+    print(f"wrote {path} (rough scan)")
 
 
 def main():
@@ -68,7 +124,7 @@ def main():
             "Wages, tips, other comp: $41,250.00",
         ],
     )
-    _write_pdf(
+    _write_rough_scan_pdf(
         "state_id_card.pdf",
         "State ID Card (Sample)",
         [
