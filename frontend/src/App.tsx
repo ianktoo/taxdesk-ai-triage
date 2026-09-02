@@ -14,9 +14,10 @@ import { TriageSummary } from "./components/TriageSummary";
 import { ReviewScreen } from "./components/ReviewScreen";
 import { AuditLog } from "./components/AuditLog";
 import { CustomerRecordView } from "./components/CustomerRecordView";
+import { UploadPanel } from "./components/UploadPanel";
 import { Banner } from "./components/Banner";
 
-type Tab = "triage" | "audit" | "record";
+type Tab = "triage" | "upload" | "audit" | "record";
 
 const DECISION_MESSAGE_KEY = {
   approve: "approvedMessage",
@@ -105,8 +106,11 @@ function AppShell() {
     <div className="app-shell">
       <header className="app-header">
         <h1>{t.app.title}</h1>
-        <p>{t.app.subtitle}</p>
+        <p className="app-subtitle">{t.app.subtitle}</p>
+        <p className="guide-text">{t.app.intro}</p>
       </header>
+
+      <Banner kind="notice">{t.app.pocNotice}</Banner>
 
       <nav className="app-nav" aria-label="Sections">
         <button
@@ -115,6 +119,13 @@ function AppShell() {
           onClick={() => setActiveTab("triage")}
         >
           {t.nav.triage}
+        </button>
+        <button
+          type="button"
+          aria-current={activeTab === "upload" ? "page" : undefined}
+          onClick={() => setActiveTab("upload")}
+        >
+          {t.nav.upload}
         </button>
         <button
           type="button"
@@ -161,6 +172,7 @@ function AppShell() {
         </>
       )}
 
+      {activeTab === "upload" && <UploadPanel />}
       {activeTab === "audit" && <AuditLog entries={auditEntries} />}
       {activeTab === "record" && <CustomerRecordView records={customerRecords} />}
     </div>

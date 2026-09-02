@@ -13,12 +13,19 @@ export function TriageSummary({ result }: { result: TriageResult }) {
           {isReady ? t.triage.statusReady : t.triage.statusReview}
         </span>
       </p>
-      <p>
-        <strong>{t.triage.categoryLabel}:</strong> {result.request_category_label}
+      <p className="guide-text">
+        {isReady ? t.triage.statusReadyGuide : t.triage.statusReviewGuide}
       </p>
-      <p>
-        <strong>{t.triage.summaryLabel}:</strong> {result.summary}
-      </p>
+      <dl className="summary-list">
+        <div>
+          <dt>{t.triage.categoryLabel}</dt>
+          <dd>{result.request_category_label}</dd>
+        </div>
+        <div>
+          <dt>{t.triage.summaryLabel}</dt>
+          <dd>{result.summary}</dd>
+        </div>
+      </dl>
       {!isReady && result.review_reasons.length > 0 && (
         <div>
           <h3>{t.triage.reviewReasonsHeading}</h3>

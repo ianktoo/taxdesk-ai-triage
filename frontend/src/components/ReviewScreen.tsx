@@ -30,6 +30,7 @@ export function ReviewScreen({ result, onDecision, submitting }: Props) {
   return (
     <section className="card" aria-labelledby="review-heading">
       <h2 id="review-heading">{t.review.heading}</h2>
+      <p className="guide-text">{t.review.guide}</p>
 
       {result.attachments.map((attachment) => (
         <article key={attachment.filename} className="card">

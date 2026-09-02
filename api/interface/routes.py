@@ -1,8 +1,13 @@
+import os
+import tempfile
 from dataclasses import asdict
+from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Request, UploadFile
 from pydantic import BaseModel
 
+from api.config import settings
+from api.config.settings import ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES
 from api.data.personas import PERSONAS, get_persona
 from api.integrations.document_extraction.base import DocumentExtractionError
 from api.integrations.document_extraction.factory import get_document_extractor
@@ -39,6 +44,48 @@ def triage(persona_id: str, request: Request):
         result = run_triage(persona, extractor)
     except DocumentExtractionError as exc:
         return err(str(exc))
+
+    return ok(asdict(result))
+
+
+@router.post("/extract")
+async def extract_uploaded_document(request: Request, file: UploadFile = File(...)):
+    """Proof-of-concept "try your own document" flow. The file is written
+    to a temp path for the single extraction call and deleted immediately
+    after, it is never persisted server-side.
+    """
+    rate_limit_error = check_rate_limit(request)
+    if rate_limit_error:
+        return rate_limit_error
+
+    if file.content_type not in ALLOWED_UPLOAD_CONTENT_TYPES:
+        return err(f"Unsupported file type: {file.content_type}. Upload a PDF, PNG, or JPEG.")
+
+    if settings.DOCUMENT_EXTRACTOR == "mock":
+        return err(
+            "Uploading your own document requires a live Nutrient DWS connection "
+            "(DOCUMENT_EXTRACTOR=nutrient). This demo instance is running on canned "
+            "sample data only."
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_BYTES:
+        return err(f"File too large. Max size is {MAX_UPLOAD_BYTES // (1024 * 1024)}MB.")
+
+    suffix = Path(file.filename or "upload").suffix
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        extractor = get_document_extractor()
+        result = extractor.extract(tmp_path, file.filename or "upload")
+    except DocumentExtractionError as exc:
+        return err(str(exc))
+    finally:
+        if tmp_path:
+            os.unlink(tmp_path)
 
     return ok(asdict(result))
 

@@ -37,3 +37,8 @@ UPSTASH_REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
 UPSTASH_REDIS_REST_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "5"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "3600"))
+
+# User-uploaded documents ("try your own document" proof-of-concept flow).
+# Files are processed in memory for a single request and never persisted.
+MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+ALLOWED_UPLOAD_CONTENT_TYPES = {"application/pdf", "image/png", "image/jpeg"}

@@ -92,3 +92,17 @@ export function submitApproval(body: {
     body: JSON.stringify(body),
   });
 }
+
+export async function extractUploadedDocument(file: File): Promise<ApiResult<ExtractionResult>> {
+  // Uses fetch directly (not the shared request() helper) so the browser
+  // sets the multipart Content-Type boundary itself.
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(`${BASE_URL}/extract`, { method: "POST", body: formData });
+    return (await response.json()) as ApiResult<ExtractionResult>;
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Network error" };
+  }
+}

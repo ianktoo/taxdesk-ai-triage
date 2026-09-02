@@ -13,6 +13,7 @@ export function PersonaPicker({ personas, onSend, sendingPersonaId }: Props) {
   return (
     <section className="card" aria-labelledby="persona-heading">
       <h2 id="persona-heading">{t.personas.heading}</h2>
+      <p className="guide-text">{t.personas.guide}</p>
       <ul className="persona-list">
         {personas.map((persona) => (
           <li key={persona.id} className="card persona-card">

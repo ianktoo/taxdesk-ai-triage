@@ -8,6 +8,7 @@ export function CustomerRecordView({ records }: { records: Record<string, Record
   return (
     <section className="card" aria-labelledby="record-heading">
       <h2 id="record-heading">{t.customerRecord.heading}</h2>
+      <p className="guide-text">{t.customerRecord.guide}</p>
       {entries.length === 0 ? (
         <p>{t.customerRecord.empty}</p>
       ) : (
