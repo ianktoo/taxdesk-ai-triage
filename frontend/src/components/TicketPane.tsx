@@ -12,8 +12,6 @@ interface Props {
 
 type Tab = "documents" | "overview";
 
-const CONFIDENCE_THRESHOLD = 0.85;
-
 const STATUS_MESSAGE_KEY = {
   approved: "approvedMessage",
   corrected: "correctedMessage",
