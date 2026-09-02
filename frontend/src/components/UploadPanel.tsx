@@ -2,6 +2,7 @@ import { useId, useRef, useState } from "react";
 import { useTranslations } from "../i18n";
 import { extractUploadedDocument, type ExtractionResult } from "../client/apiClient";
 import { Banner } from "./Banner";
+import { FileIcon } from "./icons";
 
 const CONFIDENCE_THRESHOLD = 0.85;
 
@@ -46,8 +47,10 @@ export function UploadPanel() {
   }
 
   return (
-    <section className="card" aria-labelledby="upload-heading">
-      <h2 id="upload-heading">{t.upload.heading}</h2>
+    <section aria-labelledby="upload-heading">
+      <h1 id="upload-heading" style={{ marginBottom: "var(--space-sm)" }}>
+        {t.upload.heading}
+      </h1>
       <Banner kind="notice">{t.upload.pocNotice}</Banner>
       <p className="guide-text">{t.upload.guide}</p>
 
@@ -62,7 +65,9 @@ export function UploadPanel() {
           accept="application/pdf,image/png,image/jpeg"
           onChange={handleFileChange}
         />
-        <span className="guide-text">{selectedFile ? selectedFile.name : t.upload.noFileChosen}</span>
+        <span className="guide-text" style={{ margin: 0 }}>
+          {selectedFile ? selectedFile.name : t.upload.noFileChosen}
+        </span>
       </div>
 
       <div className="action-row">
@@ -83,28 +88,44 @@ export function UploadPanel() {
       </div>
 
       {error && (
-        <p role="alert">
+        <p role="alert" className="banner error" style={{ marginTop: "var(--space-md)" }}>
           {t.upload.errorPrefix} {error}
         </p>
       )}
 
       {result && (
-        <article className="card">
-          <h3>{t.upload.resultHeading}</h3>
-          <p>
-            <strong>{result.document_type}</strong> (
-            {(result.document_type_confidence * 100).toFixed(0)}% confidence)
-          </p>
-          {result.fields.map((field) => (
-            <div className="field-row" key={field.name}>
-              <span>{field.name.replace(/_/g, " ")}</span>
-              <span>{field.value}</span>
-              <span className={`field-confidence ${field.confidence < CONFIDENCE_THRESHOLD ? "low" : ""}`}>
-                {(field.confidence * 100).toFixed(0)}%
-              </span>
+        <div style={{ marginTop: "var(--space-lg)" }}>
+          <h4>{t.upload.resultHeading}</h4>
+          <div className="doc-preview-card">
+            <span className="doc-preview-icon">
+              <FileIcon />
+            </span>
+            <div className="doc-preview-meta">
+              <div className="filename">{result.document_type}</div>
+              <div className="doctype">{(result.document_type_confidence * 100).toFixed(0)}% confidence</div>
             </div>
-          ))}
-        </article>
+          </div>
+          <table className="field-table">
+            <thead>
+              <tr>
+                <th scope="col">Field</th>
+                <th scope="col">Value</th>
+                <th scope="col">Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.fields.map((field) => (
+                <tr key={field.name}>
+                  <td className="field-name">{field.name.replace(/_/g, " ")}</td>
+                  <td>{field.value}</td>
+                  <td className={`field-confidence mono ${field.confidence < CONFIDENCE_THRESHOLD ? "low" : ""}`}>
+                    {(field.confidence * 100).toFixed(0)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

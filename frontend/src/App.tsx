@@ -9,76 +9,108 @@ import {
   type RecordUpdate,
   type TriageResult,
 } from "./client/apiClient";
-import { PersonaPicker } from "./components/PersonaPicker";
-import { TriageSummary } from "./components/TriageSummary";
-import { ReviewScreen } from "./components/ReviewScreen";
-import { AuditLog } from "./components/AuditLog";
-import { CustomerRecordView } from "./components/CustomerRecordView";
+import { TopNav } from "./components/TopNav";
+import { ContactSidebar } from "./components/ContactSidebar";
+import { MessagePane } from "./components/MessagePane";
+import { TicketSidebar } from "./components/TicketSidebar";
+import { TicketPane } from "./components/TicketPane";
 import { UploadPanel } from "./components/UploadPanel";
-import { Banner } from "./components/Banner";
+import { AuditLog } from "./components/AuditLog";
+import { RecordsView } from "./components/RecordsView";
 
-type Tab = "triage" | "upload" | "audit" | "record";
+export type Mode = "customer" | "agent" | "upload" | "audit" | "records";
 
-const DECISION_MESSAGE_KEY = {
-  approve: "approvedMessage",
-  correct: "correctedMessage",
-  reject: "rejectedMessage",
-} as const;
+export type TicketDecision = "pending" | "approved" | "corrected" | "rejected";
+
+export interface Ticket {
+  id: string;
+  personaId: string;
+  customerName: string;
+  message: string;
+  result: TriageResult;
+  decision: TicketDecision;
+  createdAt: string;
+  decidedAt?: string;
+}
 
 function AppShell() {
   const t = useTranslations();
 
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
   const [personaLoadError, setPersonaLoadError] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>("customer");
+
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [sendingPersonaId, setSendingPersonaId] = useState<string | null>(null);
-  const [triageResult, setTriageResult] = useState<TriageResult | null>(null);
-  const [triageError, setTriageError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [decisionError, setDecisionError] = useState<string | null>(null);
-  const [decisionSuccessMessage, setDecisionSuccessMessage] = useState<string | null>(null);
+
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [customerRecords, setCustomerRecords] = useState<Record<string, RecordUpdate>>({});
-  const [activeTab, setActiveTab] = useState<Tab>("triage");
 
   useEffect(() => {
     listPersonas().then((result) => {
       if (result.ok) {
         setPersonas(result.data);
+        setSelectedPersonaId((current) => current ?? result.data[0]?.id ?? null);
       } else {
         setPersonaLoadError(result.error);
       }
     });
   }, []);
 
+  const selectedPersona = personas.find((p) => p.id === selectedPersonaId) ?? null;
+  const lastTicketForPersona = [...tickets].reverse().find((tk) => tk.personaId === selectedPersonaId) ?? null;
+  const selectedTicket = tickets.find((tk) => tk.id === selectedTicketId) ?? null;
+  const pendingCount = tickets.filter((tk) => tk.decision === "pending").length;
+
   async function handleSend(personaId: string) {
+    const persona = personas.find((p) => p.id === personaId);
+    if (!persona) return;
+
     setSendingPersonaId(personaId);
-    setTriageError(null);
-    setTriageResult(null);
-    setDecisionError(null);
-    setDecisionSuccessMessage(null);
+    setSendError(null);
 
     const result = await runTriage(personaId);
     setSendingPersonaId(null);
 
     if (result.ok) {
-      setTriageResult(result.data);
+      const ticket: Ticket = {
+        id: `${personaId}-${Date.now()}`,
+        personaId,
+        customerName: persona.display_name,
+        message: persona.message,
+        result: result.data,
+        decision: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      setTickets((prev) => [...prev, ticket]);
     } else {
-      setTriageError(result.error);
+      setSendError(result.error);
     }
   }
 
+  function handleViewInQueue(ticketId: string) {
+    setSelectedTicketId(ticketId);
+    setMode("agent");
+  }
+
   async function handleDecision(
+    ticket: Ticket,
     decision: "approve" | "correct" | "reject",
     fieldUpdates: Record<string, string>,
   ) {
-    if (!triageResult) return;
     setSubmittingDecision(true);
     setDecisionError(null);
 
     const result = await submitApproval({
-      persona_id: triageResult.persona_id,
-      customer_name: triageResult.customer_name,
-      request_category: triageResult.request_category,
+      persona_id: ticket.personaId,
+      customer_name: ticket.customerName,
+      request_category: ticket.result.request_category,
       decision,
       field_updates: decision === "reject" ? {} : fieldUpdates,
     });
@@ -86,6 +118,12 @@ function AppShell() {
     setSubmittingDecision(false);
 
     if (result.ok) {
+      const newDecision: TicketDecision = decision === "approve" ? "approved" : decision === "correct" ? "corrected" : "rejected";
+      setTickets((prev) =>
+        prev.map((tk) =>
+          tk.id === ticket.id ? { ...tk, decision: newDecision, decidedAt: new Date().toISOString() } : tk,
+        ),
+      );
       setAuditEntries((prev) => [...prev, result.data.audit_entry]);
       if (result.data.record) {
         setCustomerRecords((prev) => ({
@@ -93,88 +131,78 @@ function AppShell() {
           [result.data.record!.customer_name]: result.data.record!,
         }));
       }
-      setTriageResult(null);
-      setDecisionSuccessMessage(t.review[DECISION_MESSAGE_KEY[decision]]);
     } else {
-      // Leave triageResult in place so the reviewer can retry without
-      // re-running triage (e.g. after a rate-limit or network error).
       setDecisionError(result.error);
     }
   }
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <h1>{t.app.title}</h1>
-        <p className="app-subtitle">{t.app.subtitle}</p>
-        <p className="guide-text">{t.app.intro}</p>
-      </header>
+      <TopNav mode={mode} onModeChange={setMode} pendingCount={pendingCount} />
 
-      <Banner kind="notice">{t.app.pocNotice}</Banner>
+      <div className="app-body">
+        {mode === "customer" && (
+          <>
+            <ContactSidebar
+              personas={personas}
+              selectedPersonaId={selectedPersonaId}
+              onSelect={setSelectedPersonaId}
+            />
+            <main className="main-pane">
+              {personaLoadError && <p className="banner error">{personaLoadError}</p>}
+              <MessagePane
+                persona={selectedPersona}
+                sending={sendingPersonaId === selectedPersonaId}
+                error={sendingPersonaId === null ? sendError : null}
+                lastTicket={lastTicketForPersona}
+                onSend={handleSend}
+                onViewInQueue={handleViewInQueue}
+              />
+            </main>
+          </>
+        )}
 
-      <nav className="app-nav" aria-label="Sections">
-        <button
-          type="button"
-          aria-current={activeTab === "triage" ? "page" : undefined}
-          onClick={() => setActiveTab("triage")}
-        >
-          {t.nav.triage}
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "upload" ? "page" : undefined}
-          onClick={() => setActiveTab("upload")}
-        >
-          {t.nav.upload}
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "audit" ? "page" : undefined}
-          onClick={() => setActiveTab("audit")}
-        >
-          {t.nav.auditLog}
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "record" ? "page" : undefined}
-          onClick={() => setActiveTab("record")}
-        >
-          {t.nav.customerRecord}
-        </button>
-      </nav>
+        {mode === "agent" && (
+          <>
+            <TicketSidebar
+              tickets={tickets}
+              selectedTicketId={selectedTicketId}
+              onSelect={setSelectedTicketId}
+            />
+            <main className="main-pane">
+              {selectedTicket ? (
+                <TicketPane
+                  key={selectedTicket.id}
+                  ticket={selectedTicket}
+                  submitting={submittingDecision}
+                  error={decisionError}
+                  onDecision={(decision, fieldUpdates) => handleDecision(selectedTicket, decision, fieldUpdates)}
+                />
+              ) : (
+                <p className="main-empty">{tickets.length === 0 ? t.queue.empty : t.queue.selectPrompt}</p>
+              )}
+            </main>
+          </>
+        )}
 
-      {activeTab === "triage" && (
-        <>
-          {personaLoadError && (
-            <Banner kind="error">
-              {t.personas.loadErrorPrefix} {personaLoadError}
-            </Banner>
-          )}
-          {decisionSuccessMessage && <Banner kind="success">{decisionSuccessMessage}</Banner>}
-          {decisionError && (
-            <Banner kind="error">
-              {t.review.decisionErrorPrefix} {decisionError}
-            </Banner>
-          )}
-          <PersonaPicker personas={personas} onSend={handleSend} sendingPersonaId={sendingPersonaId} />
-          {sendingPersonaId && <p role="status">{t.triage.loading}</p>}
-          {triageError && (
-            <p role="alert">
-              {t.triage.errorPrefix} {triageError}
-            </p>
-          )}
-          {triageResult && (
-            <>
-              <TriageSummary result={triageResult} />
-              <ReviewScreen result={triageResult} onDecision={handleDecision} submitting={submittingDecision} />
-            </>
-          )}
-        </>
-      )}
+        {mode === "upload" && (
+          <main className="main-pane" style={{ maxWidth: 720 }}>
+            <UploadPanel />
+          </main>
+        )}
 
-      {activeTab === "upload" && <UploadPanel />}
-      {activeTab === "audit" && <AuditLog entries={auditEntries} />}
-      {activeTab === "record" && <CustomerRecordView records={customerRecords} />}
+        {mode === "audit" && (
+          <main className="main-pane">
+            <AuditLog entries={auditEntries} />
+          </main>
+        )}
+
+        {mode === "records" && (
+          <main className="main-pane">
+            <RecordsView records={customerRecords} />
+          </main>
+        )}
+      </div>
     </div>
   );
 }

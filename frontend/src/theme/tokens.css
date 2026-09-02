@@ -1,26 +1,31 @@
 :root {
-  --color-bg: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-border: #e2e0db;
-  --color-text: #1f2320;
-  --color-text-muted: #5d6a63;
-  --color-primary: #1f6f54;
-  --color-primary-hover: #175840;
-  --color-primary-contrast: #ffffff;
-  --color-warning-bg: #fff3d6;
-  --color-warning-border: #e8b93a;
-  --color-warning-text: #6b5300;
-  --color-success-bg: #e4f5ec;
-  --color-success-border: #1f6f54;
-  --color-success-text: #14513c;
-  --color-danger: #b3402a;
-  --color-danger-contrast: #ffffff;
+  --color-bg: #f5f3ee;
+  --color-surface: #fffdf9;
+  --color-surface-sunken: #ece9e1;
+  --color-border: #ddd8cd;
+  --color-text: #1c211f;
+  --color-text-muted: #6a6a5e;
 
-  --font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --color-primary: #2b6e55;
+  --color-primary-hover: #22563f;
+  --color-primary-contrast: #ffffff;
+  --color-primary-wash: #e3ede8;
+
+  --color-flag: #b8862e;
+  --color-flag-wash: #f6ecd8;
+
+  --color-danger: #a94430;
+  --color-danger-hover: #8a3626;
+  --color-danger-contrast: #ffffff;
+  --color-danger-wash: #f3e2dd;
+
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.75rem;
+  --font-size-base: 0.95rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.5rem;
 
   --space-xs: 4px;
   --space-sm: 8px;
@@ -28,30 +33,35 @@
   --space-lg: 24px;
   --space-xl: 40px;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
 
-  --focus-ring: 0 0 0 3px rgba(31, 111, 84, 0.4);
+  --topbar-height: 52px;
+  --sidebar-width: 268px;
+
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-primary);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #14161a;
-    --color-surface: #1c1f24;
-    --color-border: #2c3038;
-    --color-text: #eef0ee;
-    --color-text-muted: #a2ada7;
-    --color-primary: #4fbd93;
-    --color-primary-hover: #6cd0a9;
-    --color-primary-contrast: #08130f;
-    --color-warning-bg: #3a3110;
-    --color-warning-border: #caa53a;
-    --color-warning-text: #f2d783;
-    --color-success-bg: #14301f;
-    --color-success-border: #4fbd93;
-    --color-success-text: #a7e6c8;
-    --color-danger: #e2735a;
-    --color-danger-contrast: #1a0704;
+    --color-bg: #14181a;
+    --color-surface: #1b2022;
+    --color-surface-sunken: #101314;
+    --color-border: #2c3234;
+    --color-text: #e7ece9;
+    --color-text-muted: #8b948f;
+
+    --color-primary: #4f9c80;
+    --color-primary-hover: #6bb59a;
+    --color-primary-contrast: #06120d;
+    --color-primary-wash: #1c2c26;
+
+    --color-flag: #d1a35a;
+    --color-flag-wash: #2f2618;
+
+    --color-danger: #d17b64;
+    --color-danger-hover: #de8f7a;
+    --color-danger-contrast: #200a05;
+    --color-danger-wash: #2f1c17;
   }
 }

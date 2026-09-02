@@ -3,13 +3,16 @@ import type { AuditEntry } from "../client/apiClient";
 
 export function AuditLog({ entries }: { entries: AuditEntry[] }) {
   const t = useTranslations();
+  const sorted = [...entries].reverse();
 
   return (
-    <section className="card" aria-labelledby="audit-heading">
-      <h2 id="audit-heading">{t.auditLog.heading}</h2>
+    <section aria-labelledby="audit-heading">
+      <h1 id="audit-heading" style={{ marginBottom: "var(--space-sm)" }}>
+        {t.auditLog.heading}
+      </h1>
       <p className="guide-text">{t.auditLog.guide}</p>
-      {entries.length === 0 ? (
-        <p>{t.auditLog.empty}</p>
+      {sorted.length === 0 ? (
+        <p className="main-empty">{t.auditLog.empty}</p>
       ) : (
         <div className="table-scroll">
           <table className="audit-table">
@@ -17,13 +20,13 @@ export function AuditLog({ entries }: { entries: AuditEntry[] }) {
             <thead>
               <tr>
                 <th scope="col">{t.auditLog.columnTime}</th>
-                <th scope="col">{t.auditLog.columnPersona}</th>
+                <th scope="col">{t.auditLog.columnCustomer}</th>
                 <th scope="col">{t.auditLog.columnEvent}</th>
                 <th scope="col">{t.auditLog.columnDetail}</th>
               </tr>
             </thead>
             <tbody>
-              {entries.map((entry, index) => (
+              {sorted.map((entry, index) => (
                 <tr key={`${entry.timestamp}-${index}`}>
                   <td>{new Date(entry.timestamp).toLocaleString()}</td>
                   <td>{entry.persona_id}</td>
