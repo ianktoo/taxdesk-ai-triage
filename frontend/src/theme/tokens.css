@@ -33,8 +33,11 @@
   --space-lg: 24px;
   --space-xl: 40px;
 
-  --radius-sm: 3px;
-  --radius-md: 6px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-card: 0 1px 2px rgba(28, 33, 31, 0.06), 0 1px 6px rgba(28, 33, 31, 0.05);
 
   --topbar-height: 52px;
   --sidebar-width: 268px;
@@ -63,5 +66,7 @@
     --color-danger-hover: #de8f7a;
     --color-danger-contrast: #200a05;
     --color-danger-wash: #2f1c17;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 6px rgba(0, 0, 0, 0.2);
   }
 }

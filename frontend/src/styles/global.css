@@ -213,20 +213,17 @@ button.danger:hover:not(:disabled) {
   text-align: left;
   background: transparent;
   border: none;
-  border-left: 3px solid transparent;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   padding: var(--space-sm);
   cursor: pointer;
 }
 
 .sidebar-row:hover {
   background: var(--color-surface-sunken);
-  border-color: var(--color-border);
 }
 
 .sidebar-row[aria-current="true"] {
   background: var(--color-primary-wash);
-  border-left-color: var(--color-primary);
 }
 
 .sidebar-row .row-title {
@@ -419,17 +416,18 @@ button.danger:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  border: 1px solid var(--color-border);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-md);
   margin-bottom: var(--space-md);
   background: var(--color-surface-sunken);
+  box-shadow: var(--shadow-card);
   text-decoration: none;
   color: inherit;
 }
 
 .doc-preview-card:hover {
-  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--color-primary);
 }
 
 .doc-preview-action {
@@ -445,7 +443,7 @@ button.danger:hover:not(:disabled) {
   height: 40px;
   border-radius: var(--radius-sm);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,9 +480,17 @@ table.field-table th {
   border-bottom: 1px solid var(--color-border);
 }
 
+table.field-table tr {
+  border-radius: var(--radius-sm);
+}
+
+table.field-table tbody tr:hover {
+  background: var(--color-surface-sunken);
+}
+
 table.field-table td {
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-sm);
+  border-bottom: none;
   vertical-align: middle;
 }
 
@@ -529,25 +535,26 @@ td.field-confidence.low {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  border: 1px solid;
+  border: none;
+  border-left: 3px solid;
   margin-bottom: var(--space-md);
 }
 
 .banner.success {
   background: var(--color-primary-wash);
-  border-color: var(--color-primary);
+  border-left-color: var(--color-primary);
   color: var(--color-primary);
 }
 
 .banner.error {
   background: var(--color-danger-wash);
-  border-color: var(--color-danger);
+  border-left-color: var(--color-danger);
   color: var(--color-danger);
 }
 
 .banner.notice {
   background: var(--color-flag-wash);
-  border-color: var(--color-flag);
+  border-left-color: var(--color-flag);
   color: var(--color-flag);
 }
 
@@ -596,6 +603,10 @@ table.audit-table td {
   font-size: var(--font-size-sm);
 }
 
+table.audit-table tbody tr:hover {
+  background: var(--color-surface-sunken);
+}
+
 table.audit-table td:first-child {
   font-family: var(--font-mono);
   white-space: nowrap;
@@ -607,10 +618,12 @@ table.audit-table td:first-child {
 }
 
 .record-card {
-  border: 1px solid var(--color-border);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-md);
   max-width: 480px;
+  background: var(--color-surface-sunken);
+  box-shadow: var(--shadow-card);
 }
 
 .record-card h3 {
