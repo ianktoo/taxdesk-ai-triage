@@ -20,7 +20,11 @@ frontend/dist/
 frontend/.vite/
 
 # Vercel
-.vercel/
+.vercel
+# Auto-generated locally by `vercel build`'s Python (uv) tooling; requirements.txt is the source of truth
+.python-version
+pyproject.toml
+uv.lock
 
 # Editor / OS
 .vscode/
@@ -30,5 +34,3 @@ Thumbs.db
 
 # Scratch
 .scratch/
-
-.vercel
