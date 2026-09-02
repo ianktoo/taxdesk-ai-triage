@@ -26,9 +26,10 @@ export function PersonaPicker({ personas, onSend, sendingPersonaId }: Props) {
               className="primary"
               type="button"
               onClick={() => onSend(persona.id)}
-              disabled={sendingPersonaId === persona.id}
+              disabled={sendingPersonaId !== null}
+              aria-busy={sendingPersonaId === persona.id}
             >
-              {t.personas.sendButton}
+              {sendingPersonaId === persona.id ? t.personas.sending : t.personas.sendButton}
             </button>
           </li>
         ))}

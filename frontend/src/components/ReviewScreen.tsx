@@ -67,24 +67,27 @@ export function ReviewScreen({ result, onDecision, submitting }: Props) {
           type="button"
           className="primary"
           disabled={submitting}
+          aria-busy={submitting}
           onClick={() => onDecision("approve", editedValues)}
         >
-          {t.review.approve}
+          {submitting ? t.review.submitting : t.review.approve}
         </button>
         <button
           type="button"
           disabled={submitting}
+          aria-busy={submitting}
           onClick={() => onDecision("correct", editedValues)}
         >
-          {t.review.correct}
+          {submitting ? t.review.submitting : t.review.correct}
         </button>
         <button
           type="button"
           className="danger"
           disabled={submitting}
+          aria-busy={submitting}
           onClick={() => onDecision("reject", {})}
         >
-          {t.review.reject}
+          {submitting ? t.review.submitting : t.review.reject}
         </button>
       </div>
     </section>

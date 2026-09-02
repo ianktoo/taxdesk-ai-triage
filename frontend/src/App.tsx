@@ -14,17 +14,27 @@ import { TriageSummary } from "./components/TriageSummary";
 import { ReviewScreen } from "./components/ReviewScreen";
 import { AuditLog } from "./components/AuditLog";
 import { CustomerRecordView } from "./components/CustomerRecordView";
+import { Banner } from "./components/Banner";
 
 type Tab = "triage" | "audit" | "record";
+
+const DECISION_MESSAGE_KEY = {
+  approve: "approvedMessage",
+  correct: "correctedMessage",
+  reject: "rejectedMessage",
+} as const;
 
 function AppShell() {
   const t = useTranslations();
 
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
+  const [personaLoadError, setPersonaLoadError] = useState<string | null>(null);
   const [sendingPersonaId, setSendingPersonaId] = useState<string | null>(null);
   const [triageResult, setTriageResult] = useState<TriageResult | null>(null);
   const [triageError, setTriageError] = useState<string | null>(null);
   const [submittingDecision, setSubmittingDecision] = useState(false);
+  const [decisionError, setDecisionError] = useState<string | null>(null);
+  const [decisionSuccessMessage, setDecisionSuccessMessage] = useState<string | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [customerRecords, setCustomerRecords] = useState<Record<string, RecordUpdate>>({});
   const [activeTab, setActiveTab] = useState<Tab>("triage");
@@ -33,6 +43,8 @@ function AppShell() {
     listPersonas().then((result) => {
       if (result.ok) {
         setPersonas(result.data);
+      } else {
+        setPersonaLoadError(result.error);
       }
     });
   }, []);
@@ -41,6 +53,8 @@ function AppShell() {
     setSendingPersonaId(personaId);
     setTriageError(null);
     setTriageResult(null);
+    setDecisionError(null);
+    setDecisionSuccessMessage(null);
 
     const result = await runTriage(personaId);
     setSendingPersonaId(null);
@@ -58,6 +72,7 @@ function AppShell() {
   ) {
     if (!triageResult) return;
     setSubmittingDecision(true);
+    setDecisionError(null);
 
     const result = await submitApproval({
       persona_id: triageResult.persona_id,
@@ -78,6 +93,11 @@ function AppShell() {
         }));
       }
       setTriageResult(null);
+      setDecisionSuccessMessage(t.review[DECISION_MESSAGE_KEY[decision]]);
+    } else {
+      // Leave triageResult in place so the reviewer can retry without
+      // re-running triage (e.g. after a rate-limit or network error).
+      setDecisionError(result.error);
     }
   }
 
@@ -114,6 +134,17 @@ function AppShell() {
 
       {activeTab === "triage" && (
         <>
+          {personaLoadError && (
+            <Banner kind="error">
+              {t.personas.loadErrorPrefix} {personaLoadError}
+            </Banner>
+          )}
+          {decisionSuccessMessage && <Banner kind="success">{decisionSuccessMessage}</Banner>}
+          {decisionError && (
+            <Banner kind="error">
+              {t.review.decisionErrorPrefix} {decisionError}
+            </Banner>
+          )}
           <PersonaPicker personas={personas} onSend={handleSend} sendingPersonaId={sendingPersonaId} />
           {sendingPersonaId && <p role="status">{t.triage.loading}</p>}
           {triageError && (

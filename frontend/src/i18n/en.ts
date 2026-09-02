@@ -6,7 +6,9 @@ export const en = {
   personas: {
     heading: "Incoming customer messages",
     sendButton: "Send to triage",
+    sending: "Sending...",
     attachmentsLabel: "Attachments",
+    loadErrorPrefix: "Couldn't load personas:",
   },
   triage: {
     heading: "Triage result",
@@ -27,6 +29,11 @@ export const en = {
     correct: "Correct & approve",
     reject: "Reject",
     correctionPrompt: "Update field value",
+    submitting: "Submitting...",
+    decisionErrorPrefix: "Couldn't submit decision:",
+    approvedMessage: "Approved. Customer record updated.",
+    correctedMessage: "Correction saved and approved. Customer record updated.",
+    rejectedMessage: "Request rejected. No record changes made.",
   },
   auditLog: {
     heading: "Audit trail",
