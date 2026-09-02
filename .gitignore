@@ -1,0 +1,32 @@
+# Secrets and local env
+.env
+.env.local
+*.pem
+*.key
+
+# Project-internal planning docs (not for the public repo)
+CLAUDE.md
+plan.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Vercel
+.vercel/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Scratch
+.scratch/
