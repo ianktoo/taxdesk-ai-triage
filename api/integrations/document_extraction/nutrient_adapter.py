@@ -39,6 +39,26 @@ CLASSIFY_LABELS = [
         "label": "name_change_request",
         "description": "A form requesting a legal name change, for example after marriage.",
     },
+    {
+        "label": "irs_form_w4",
+        "description": "IRS Form W-4, Employee's Withholding Certificate.",
+    },
+    {
+        "label": "irs_form_8822",
+        "description": "IRS Form 8822, Change of Address.",
+    },
+    {
+        "label": "receipt",
+        "description": "A purchase receipt from a store or merchant.",
+    },
+    {
+        "label": "invoice",
+        "description": "An invoice or bill from a vendor requesting payment.",
+    },
+    {
+        "label": "letter",
+        "description": "A general personal or business letter not related to a tax or account-change request.",
+    },
 ]
 
 EXTRACT_SCHEMAS: dict[str, dict] = {
@@ -88,6 +108,44 @@ EXTRACT_SCHEMAS: dict[str, dict] = {
         },
         "required": ["previous_name", "new_name"],
     },
+    "irs_form_w4": {
+        "type": "object",
+        "properties": {
+            "full_name": {"type": "string", "description": "Employee's full name from Step 1"},
+            "address": {"type": "string", "description": "Employee's address"},
+            "ssn_last4": {"type": "string", "description": "Last 4 digits of the employee's SSN"},
+        },
+        "required": ["full_name"],
+    },
+    "irs_form_8822": {
+        "type": "object",
+        "properties": {
+            "full_name": {"type": "string", "description": "Filer's full name"},
+            "old_address": {"type": "string", "description": "Previous mailing address"},
+            "new_address": {"type": "string", "description": "New mailing address"},
+        },
+        "required": ["full_name"],
+    },
+    "receipt": {
+        "type": "object",
+        "properties": {
+            "merchant_name": {"type": "string", "description": "Name of the store or merchant"},
+            "total_amount": {"type": "string", "description": "Total amount paid"},
+            "date": {"type": "string", "description": "Date of purchase"},
+        },
+        "required": ["merchant_name"],
+    },
+    "invoice": {
+        "type": "object",
+        "properties": {
+            "vendor_name": {"type": "string", "description": "Name of the vendor issuing the invoice"},
+            "invoice_number": {"type": "string", "description": "Invoice number"},
+            "amount_due": {"type": "string", "description": "Total amount due"},
+        },
+        "required": ["vendor_name"],
+    },
+    # "letter" has no schema on purpose: it's an intentionally unstructured
+    # document type, extraction falls back to an empty field list for it.
 }
 
 

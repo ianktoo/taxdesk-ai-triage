@@ -146,6 +146,39 @@ def main():
             "Supporting document referenced: Marriage certificate (attached)",
         ],
     )
+    _write_pdf(
+        "grocery_receipt.pdf",
+        "Springfield Grocery Co-op - Receipt",
+        [
+            "Store: Springfield Grocery Co-op, 12 Main St",
+            "Date: 08/28/2026",
+            "Items: produce, dairy, bakery (14 items)",
+            "Total: $58.34",
+            "Payment method: Debit card ending 4471",
+        ],
+    )
+    _write_pdf(
+        "office_supplies_invoice.pdf",
+        "Springfield Office Supply Co. - Invoice",
+        [
+            "Invoice number: INV-88213",
+            "Bill to: Renata Silva",
+            "Invoice date: 08/22/2026",
+            "Amount due: $212.50",
+            "Due date: 09/05/2026",
+        ],
+    )
+    _write_pdf(
+        "hoa_newsletter_letter.pdf",
+        "Oakwood Commons HOA - Community Update",
+        [
+            "Dear resident,",
+            "This month's community update covers the pool schedule,",
+            "upcoming landscaping work, and the fall block party on",
+            "October 3rd. No action is required on your part.",
+            "Thank you, Oakwood Commons HOA Board",
+        ],
+    )
 
 
 if __name__ == "__main__":

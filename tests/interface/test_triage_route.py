@@ -34,6 +34,19 @@ def test_triage_unknown_persona_returns_contract_error():
     assert "error" in body
 
 
+def test_get_document_serves_known_attachment():
+    response = client.get("/api/documents/change_of_address_form.pdf")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+
+
+def test_get_document_rejects_unknown_filename():
+    response = client.get("/api/documents/not-a-real-attachment.pdf")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is False
+
+
 def test_upload_extract_on_mock_adapter_returns_contract_error():
     # The mock adapter has no canned data for arbitrary uploads, and the
     # route explicitly blocks uploads unless a live Nutrient connection

@@ -9,18 +9,31 @@ from api.config.settings import AUTO_APPROVE_CONFIDENCE_THRESHOLD, SAMPLE_DOCS_D
 from api.data.personas import Persona
 from api.integrations.document_extraction.base import DocumentExtractor, ExtractionResult
 
-# Document type -> request category this business recognizes.
+# Document type -> request category this business recognizes. Types not
+# listed here (receipts, invoices, letters, ...) fall through to a
+# message-text check and then to "unclassified" - the system doesn't
+# force every attachment into a tax-relevant bucket just because it's
+# there.
 _CATEGORY_BY_DOC_TYPE = {
     "change_of_address_form": "change_of_address",
     "utility_bill": "change_of_address",
+    "irs_form_8822": "change_of_address",
     "name_change_request": "name_change",
+    "irs_form_w4": "update_withholding",
     "w2": "document_upload",
     "state_id": "document_upload",
+}
+
+# Message-text fallback for categories no document type maps to (a
+# refund inquiry usually has no attachment that proves it either way).
+_CATEGORY_KEYWORDS = {
+    "refund_status_inquiry": ("refund",),
 }
 
 _CATEGORY_LABELS = {
     "change_of_address": "Change of address",
     "name_change": "Name change",
+    "update_withholding": "Update withholding",
     "document_upload": "Document upload",
     "refund_status_inquiry": "Refund status inquiry",
     "unclassified": "Unclassified",
@@ -47,12 +60,22 @@ class TriageResult:
     attachments: list[AttachmentResult]
 
 
-def _categorize(attachments: list[AttachmentResult]) -> str:
+def _categorize(message: str, attachments: list[AttachmentResult]) -> tuple[str, bool]:
+    """Returns (category, has_document_evidence). A category reached only
+    via message keywords, or not reached at all, has no document backing
+    it, so it can never be auto-approved: there's nothing to verify.
+    """
     for att in attachments:
         category = _CATEGORY_BY_DOC_TYPE.get(att.extraction.document_type)
         if category:
-            return category
-    return "unclassified"
+            return category, True
+
+    message_lower = message.lower()
+    for category, keywords in _CATEGORY_KEYWORDS.items():
+        if any(keyword in message_lower for keyword in keywords):
+            return category, False
+
+    return "unclassified", False
 
 
 def _build_summary(persona: Persona, category: str, attachments: list[AttachmentResult]) -> str:
@@ -76,10 +99,15 @@ def _build_summary(persona: Persona, category: str, attachments: list[Attachment
         return f"{name} requests a change of address; no supporting address field extracted."
     if category == "name_change":
         return f"{name} requests a name change based on the attached name-change form."
+    if category == "update_withholding":
+        return f"{name} wants to update federal tax withholding based on the attached W-4."
+    if category == "refund_status_inquiry":
+        return f"{name} is asking about the status of a refund; no document confirms or refutes this."
     if category == "document_upload":
         doc_types = ", ".join(a.extraction.document_type for a in attachments)
         return f"{name} uploaded supporting documents ({doc_types}) with no specific action requested."
-    return f"{name} sent a message that could not be matched to a known request category."
+    doc_types = ", ".join(a.extraction.document_type for a in attachments) or "no attachments"
+    return f"{name}'s message and attachments ({doc_types}) don't match a known request category."
 
 
 def run_triage(persona: Persona, extractor: DocumentExtractor) -> TriageResult:
@@ -96,7 +124,7 @@ def run_triage(persona: Persona, extractor: DocumentExtractor) -> TriageResult:
             AttachmentResult(filename=filename, extraction=extraction, low_confidence_fields=low_conf)
         )
 
-    category = _categorize(attachment_results)
+    category, has_evidence = _categorize(persona.message, attachment_results)
     summary = _build_summary(persona, category, attachment_results)
 
     review_reasons = [
@@ -104,6 +132,10 @@ def run_triage(persona: Persona, extractor: DocumentExtractor) -> TriageResult:
         for att in attachment_results
         if att.low_confidence_fields
     ]
+    if not has_evidence:
+        review_reasons.append(
+            f"no attachment confirms the '{_CATEGORY_LABELS.get(category, category)}' category, needs manual verification"
+        )
     status = "needs_human_review" if review_reasons else "ready_to_auto_approve"
 
     return TriageResult(

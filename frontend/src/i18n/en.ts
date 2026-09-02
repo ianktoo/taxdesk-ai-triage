@@ -43,6 +43,7 @@ export const en = {
     summary: "Summary",
     reviewReasonsHeading: "Flagged because",
     documentType: "Document type",
+    viewDocument: "View original",
     fieldColumn: "Field",
     valueColumn: "Value",
     confidenceColumn: "Confidence",

@@ -4,10 +4,11 @@ from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import APIRouter, File, Request, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from api.config import settings
-from api.config.settings import ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES
+from api.config.settings import ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES, SAMPLE_DOCS_DIR
 from api.data.personas import PERSONAS, get_persona
 from api.integrations.document_extraction.base import DocumentExtractionError
 from api.integrations.document_extraction.factory import get_document_extractor
@@ -26,6 +27,33 @@ def list_personas():
             {"id": p.id, "display_name": p.display_name, "message": p.message, "attachments": p.attachments}
             for p in PERSONAS.values()
         ]
+    )
+
+
+_KNOWN_ATTACHMENT_FILENAMES = {filename for p in PERSONAS.values() for filename in p.attachments}
+
+
+@router.get("/documents/{filename}")
+def get_document(filename: str):
+    """Serves a persona's sample attachment for preview/download.
+
+    Only filenames that appear in a known persona's attachment list are
+    servable, this is a fixed whitelist, not a general file server, so
+    there's no path-traversal surface even though the path segment is
+    user-supplied.
+    """
+    if filename not in _KNOWN_ATTACHMENT_FILENAMES:
+        return err(f"Unknown document: {filename}")
+
+    file_path = SAMPLE_DOCS_DIR / filename
+    if not file_path.is_file():
+        return err(f"Document not found on server: {filename}")
+
+    return FileResponse(
+        file_path,
+        media_type="application/pdf",
+        filename=filename,
+        content_disposition_type="inline",
     )
 
 

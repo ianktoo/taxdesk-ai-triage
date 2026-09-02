@@ -17,6 +17,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
   }
 }
 
+// GET-able directly by the browser (used as a link href, not fetched
+// through request()), so it's exempt from the {ok,data} contract.
+export function documentUrl(filename: string): string {
+  return `${BASE_URL}/documents/${encodeURIComponent(filename)}`;
+}
+
 export interface PersonaSummary {
   id: string;
   display_name: string;

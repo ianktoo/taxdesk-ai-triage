@@ -346,8 +346,15 @@ button.danger:hover:not(:disabled) {
   border-radius: var(--radius-sm);
   padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-sm);
+  text-decoration: none;
+  cursor: pointer;
   color: var(--color-text-muted);
   background: var(--color-surface-sunken);
+}
+
+.attachment-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .sent-notice {
@@ -417,6 +424,20 @@ button.danger:hover:not(:disabled) {
   padding: var(--space-md);
   margin-bottom: var(--space-md);
   background: var(--color-surface-sunken);
+  text-decoration: none;
+  color: inherit;
+}
+
+.doc-preview-card:hover {
+  border-color: var(--color-primary);
+}
+
+.doc-preview-action {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .doc-preview-icon {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslations } from "../i18n";
+import { documentUrl } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { FileIcon } from "./icons";
 
@@ -120,7 +121,12 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
             ))}
           </div>
 
-          <div className="doc-preview-card">
+          <a
+            className="doc-preview-card"
+            href={documentUrl(currentAttachment.filename)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <span className="doc-preview-icon">
               <FileIcon />
             </span>
@@ -131,7 +137,8 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
                 {(currentAttachment.extraction.document_type_confidence * 100).toFixed(0)}%)
               </div>
             </div>
-          </div>
+            <span className="doc-preview-action">{t.ticket.viewDocument}</span>
+          </a>
 
           <table className="field-table">
             <thead>

@@ -1,5 +1,5 @@
 import { useTranslations } from "../i18n";
-import type { PersonaSummary } from "../client/apiClient";
+import { documentUrl, type PersonaSummary } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { PaperclipIcon, SendIcon, CheckCircleIcon } from "./icons";
 
@@ -44,10 +44,16 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
 
       <div className="attachment-chip-list">
         {persona.attachments.map((filename) => (
-          <span className="attachment-chip" key={filename}>
+          <a
+            className="attachment-chip"
+            key={filename}
+            href={documentUrl(filename)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <PaperclipIcon width={14} height={14} />
             {filename}
-          </span>
+          </a>
         ))}
       </div>
 

@@ -56,6 +56,47 @@ _CANNED_RESULTS: dict[str, ExtractionResult] = {
             ExtractedField("effective_date", "2026-08-20", 0.87),
         ],
     ),
+    "irs_form_w4.pdf": ExtractionResult(
+        document_type="irs_form_w4",
+        document_type_confidence=0.98,
+        fields=[
+            ExtractedField("full_name", "James Okafor", 0.95),
+            ExtractedField("address", "456 Birch Ave, Springfield, IL 62704", 0.95),
+            ExtractedField("ssn_last4", "4477", 0.95),
+        ],
+    ),
+    "irs_form_8822.pdf": ExtractionResult(
+        document_type="irs_form_8822",
+        document_type_confidence=0.9,
+        fields=[
+            ExtractedField("full_name", "", 0.3),
+            ExtractedField("old_address", "", 0.3),
+            ExtractedField("new_address", "", 0.3),
+        ],
+    ),
+    "grocery_receipt.pdf": ExtractionResult(
+        document_type="receipt",
+        document_type_confidence=0.93,
+        fields=[
+            ExtractedField("merchant_name", "Springfield Grocery Co-op", 0.92),
+            ExtractedField("total_amount", "$58.34", 0.9),
+            ExtractedField("date", "2026-08-28", 0.88),
+        ],
+    ),
+    "office_supplies_invoice.pdf": ExtractionResult(
+        document_type="invoice",
+        document_type_confidence=0.93,
+        fields=[
+            ExtractedField("vendor_name", "Springfield Office Supply Co.", 0.91),
+            ExtractedField("invoice_number", "INV-88213", 0.9),
+            ExtractedField("amount_due", "$212.50", 0.89),
+        ],
+    ),
+    "hoa_newsletter_letter.pdf": ExtractionResult(
+        document_type="letter",
+        document_type_confidence=0.85,
+        fields=[],
+    ),
 }
 
 
