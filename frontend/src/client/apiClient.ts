@@ -34,6 +34,29 @@ export function listPersonas() {
   return request<PersonaSummary[]>("/personas");
 }
 
+export function listSampleDocuments() {
+  return request<string[]>("/sample-documents");
+}
+
+export interface DraftPersona {
+  display_name: string;
+  message: string;
+}
+
+export function generatePersona(scenario: string) {
+  return request<DraftPersona>("/personas/generate", {
+    method: "POST",
+    body: JSON.stringify({ scenario }),
+  });
+}
+
+export function runCustomTriage(body: { customer_name: string; message: string; attachments: string[] }) {
+  return request<TriageResult>("/triage/custom", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export interface ExtractedField {
   name: string;
   value: string;
@@ -97,6 +120,28 @@ export function submitApproval(body: {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export async function synthesizeSpeech(text: string): Promise<ApiResult<{ url: string }>> {
+  // /speech returns raw audio bytes (not the {ok,data} JSON envelope) on
+  // success, but still returns the JSON contract on a rate-limit/error
+  // response, so the content-type decides how to parse the body.
+  try {
+    const response = await fetch(`${BASE_URL}/speech`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.startsWith("audio/")) {
+      const blob = await response.blob();
+      return { ok: true, data: { url: URL.createObjectURL(blob) } };
+    }
+    return (await response.json()) as ApiResult<{ url: string }>;
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Network error" };
+  }
 }
 
 export async function extractUploadedDocument(file: File): Promise<ApiResult<ExtractionResult>> {

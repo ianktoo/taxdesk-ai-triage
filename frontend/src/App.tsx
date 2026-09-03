@@ -13,6 +13,7 @@ import { LandingPage } from "./components/LandingPage";
 import { TopNav } from "./components/TopNav";
 import { ContactSidebar } from "./components/ContactSidebar";
 import { MessagePane } from "./components/MessagePane";
+import { NewRequestPanel } from "./components/NewRequestPanel";
 import { TicketSidebar } from "./components/TicketSidebar";
 import { TicketPane } from "./components/TicketPane";
 import { UploadPanel } from "./components/UploadPanel";
@@ -46,6 +47,7 @@ function AppShell() {
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [sendingPersonaId, setSendingPersonaId] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [creatingNew, setCreatingNew] = useState(false);
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -99,6 +101,27 @@ function AppShell() {
 
   function handleViewInQueue(ticketId: string) {
     setSelectedTicketId(ticketId);
+    setMode("agent");
+  }
+
+  function handleSelectPersona(personaId: string) {
+    setSelectedPersonaId(personaId);
+    setCreatingNew(false);
+  }
+
+  function handleNewRequestSent(customerName: string, message: string, result: TriageResult) {
+    const ticket: Ticket = {
+      id: `${result.persona_id}-${Date.now()}`,
+      personaId: result.persona_id,
+      customerName,
+      message,
+      result,
+      decision: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    setTickets((prev) => [...prev, ticket]);
+    setCreatingNew(false);
+    setSelectedTicketId(ticket.id);
     setMode("agent");
   }
 
@@ -158,18 +181,24 @@ function AppShell() {
             <ContactSidebar
               personas={personas}
               selectedPersonaId={selectedPersonaId}
-              onSelect={setSelectedPersonaId}
+              creatingNew={creatingNew}
+              onSelect={handleSelectPersona}
+              onStartNew={() => setCreatingNew(true)}
             />
             <main className="main-pane">
               {personaLoadError && <p className="banner error">{personaLoadError}</p>}
-              <MessagePane
-                persona={selectedPersona}
-                sending={sendingPersonaId === selectedPersonaId}
-                error={sendingPersonaId === null ? sendError : null}
-                lastTicket={lastTicketForPersona}
-                onSend={handleSend}
-                onViewInQueue={handleViewInQueue}
-              />
+              {creatingNew ? (
+                <NewRequestPanel onSent={handleNewRequestSent} />
+              ) : (
+                <MessagePane
+                  persona={selectedPersona}
+                  sending={sendingPersonaId === selectedPersonaId}
+                  error={sendingPersonaId === null ? sendError : null}
+                  lastTicket={lastTicketForPersona}
+                  onSend={handleSend}
+                  onViewInQueue={handleViewInQueue}
+                />
+              )}
             </main>
           </>
         )}

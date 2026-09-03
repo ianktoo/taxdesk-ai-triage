@@ -16,9 +16,15 @@ body {
 }
 
 h1, h2, h3, h4 {
-  line-height: 1.25;
+  font-family: var(--font-display);
+  line-height: 1.15;
   font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0;
+}
+
+h1 {
+  font-weight: 700;
 }
 
 button {
@@ -592,6 +598,64 @@ td.field-confidence.low {
   height: 1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+}
+
+/* ---- new request (AI-generated persona) ---- */
+
+.new-request-row {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.new-request-row svg {
+  color: var(--color-primary);
+}
+
+.scenario-input {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  resize: vertical;
+}
+
+.doc-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: 480px;
+  margin-bottom: var(--space-md);
+}
+
+.doc-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+/* ---- listen (text-to-speech) control ---- */
+
+.listen-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.listen-control button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  padding: var(--space-xs) var(--space-sm);
 }
 
 table.audit-table {

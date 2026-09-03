@@ -2,6 +2,7 @@ import { useTranslations } from "../i18n";
 import { documentUrl, type PersonaSummary } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { PaperclipIcon, SendIcon, CheckCircleIcon } from "./icons";
+import { ListenButton } from "./ListenButton";
 
 interface Props {
   persona: PersonaSummary | null;
@@ -41,6 +42,9 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
       </div>
 
       <p className="message-body">{persona.message}</p>
+      <div style={{ marginBottom: "var(--space-md)" }}>
+        <ListenButton text={persona.message} />
+      </div>
 
       <div className="attachment-chip-list">
         {persona.attachments.map((filename) => (

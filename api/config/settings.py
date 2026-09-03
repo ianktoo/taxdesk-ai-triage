@@ -42,3 +42,11 @@ RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "360
 # Files are processed in memory for a single request and never persisted.
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 ALLOWED_UPLOAD_CONTENT_TYPES = {"application/pdf", "image/png", "image/jpeg"}
+
+# AI-generated personas + voice narration. Falls back to mock adapters
+# (canned persona text, a placeholder tone instead of real speech) when
+# unset, so local dev needs no extra setup.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_TEXT_MODEL = os.environ.get("OPENAI_TEXT_MODEL", "gpt-4o-mini")
+OPENAI_TTS_MODEL = os.environ.get("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
+OPENAI_TTS_VOICE = os.environ.get("OPENAI_TTS_VOICE", "alloy")

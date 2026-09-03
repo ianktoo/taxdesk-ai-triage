@@ -3,6 +3,7 @@ import { useTranslations } from "../i18n";
 import { documentUrl } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { FileIcon } from "./icons";
+import { ListenButton } from "./ListenButton";
 
 interface Props {
   ticket: Ticket;
@@ -89,6 +90,13 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
 
       {tab === "overview" && (
         <div>
+          <h4>{t.ticket.customerMessageHeading}</h4>
+          <p style={{ marginBottom: "var(--space-xs)" }}>{ticket.message}</p>
+          <div style={{ marginBottom: "var(--space-md)" }}>
+            <ListenButton text={ticket.message} />
+          </div>
+
+          <h4>{t.ticket.summaryHeading}</h4>
           <p className="guide-text" style={{ marginBottom: "var(--space-md)" }}>
             {result.summary}
           </p>

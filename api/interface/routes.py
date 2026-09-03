@@ -1,19 +1,27 @@
 import os
 import tempfile
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import APIRouter, File, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from api.config import settings
 from api.config.settings import ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES, SAMPLE_DOCS_DIR
-from api.data.personas import PERSONAS, get_persona
+from api.data.personas import PERSONAS, Persona, get_persona
+from api.integrations.cache.factory import get_cache
 from api.integrations.document_extraction.base import DocumentExtractionError
 from api.integrations.document_extraction.factory import get_document_extractor
+from api.integrations.speech_synthesis.base import SpeechSynthesisError
+from api.integrations.speech_synthesis.factory import get_speech_synthesizer
+from api.integrations.text_generation.base import TextGenerationError
+from api.integrations.text_generation.factory import get_text_generator
 from api.interface.rate_limit_guard import check_rate_limit
 from api.services.approval_service import apply_decision
+from api.services.persona_generation_service import generate_draft_persona
+from api.services.speech_service import synthesize_with_cache
 from api.services.triage_service import run_triage
 from api.utils.response import err, ok
 
@@ -30,19 +38,27 @@ def list_personas():
     )
 
 
-_KNOWN_ATTACHMENT_FILENAMES = {filename for p in PERSONAS.values() for filename in p.attachments}
+def _known_sample_document_filenames() -> set[str]:
+    """Every PDF actually present in data/sample_docs, this is the
+    servable whitelist, not a general file server, so there's no
+    path-traversal surface even though filenames are user-supplied.
+    Not just persona-linked files: AI-generated personas can attach any
+    sample document, not only the ones a hardcoded persona references.
+    """
+    if not SAMPLE_DOCS_DIR.is_dir():
+        return set()
+    return {p.name for p in SAMPLE_DOCS_DIR.glob("*.pdf")}
+
+
+@router.get("/sample-documents")
+def list_sample_documents():
+    return ok(sorted(_known_sample_document_filenames()))
 
 
 @router.get("/documents/{filename}")
 def get_document(filename: str):
-    """Serves a persona's sample attachment for preview/download.
-
-    Only filenames that appear in a known persona's attachment list are
-    servable, this is a fixed whitelist, not a general file server, so
-    there's no path-traversal surface even though the path segment is
-    user-supplied.
-    """
-    if filename not in _KNOWN_ATTACHMENT_FILENAMES:
+    """Serves a sample attachment for preview/download."""
+    if filename not in _known_sample_document_filenames():
         return err(f"Unknown document: {filename}")
 
     file_path = SAMPLE_DOCS_DIR / filename
@@ -55,6 +71,52 @@ def get_document(filename: str):
         filename=filename,
         content_disposition_type="inline",
     )
+
+
+class CustomTriageRequest(BaseModel):
+    customer_name: str
+    message: str
+    attachments: list[str] = []
+
+
+@router.post("/triage/custom")
+def triage_custom(body: CustomTriageRequest, request: Request):
+    """Runs triage for an ad-hoc (e.g. AI-generated) persona that isn't
+    in the hardcoded PERSONAS dict. Attachments must still be real files
+    from the sample document library, per [[taxdesk-ai-project]] scope:
+    users pick attachments, they don't upload or invent new documents
+    here (that's the separate /extract "try your own" flow).
+
+    Registered before /triage/{persona_id}: Starlette matches routes in
+    registration order, not by specificity, so "custom" would otherwise
+    be captured as a literal persona_id.
+    """
+    rate_limit_error = check_rate_limit(request)
+    if rate_limit_error:
+        return rate_limit_error
+
+    if not body.customer_name.strip() or not body.message.strip():
+        return err("customer_name and message are required")
+
+    known_filenames = _known_sample_document_filenames()
+    unknown = [f for f in body.attachments if f not in known_filenames]
+    if unknown:
+        return err(f"Unknown attachment(s): {', '.join(unknown)}")
+
+    persona = Persona(
+        id=f"custom-{uuid.uuid4().hex[:8]}",
+        display_name=body.customer_name.strip(),
+        message=body.message.strip(),
+        attachments=body.attachments,
+    )
+
+    try:
+        extractor = get_document_extractor()
+        result = run_triage(persona, extractor)
+    except DocumentExtractionError as exc:
+        return err(str(exc))
+
+    return ok(asdict(result))
 
 
 @router.post("/triage/{persona_id}")
@@ -74,6 +136,58 @@ def triage(persona_id: str, request: Request):
         return err(str(exc))
 
     return ok(asdict(result))
+
+
+class GeneratePersonaRequest(BaseModel):
+    scenario: str
+
+
+@router.post("/personas/generate")
+def generate_persona(body: GeneratePersonaRequest, request: Request):
+    """AI-generates a draft customer name + message from a short scenario
+    the agent writes. Returns a draft only, no attachments, and nothing
+    is persisted server-side; the agent picks real sample documents to
+    attach afterward and sends it through /triage/custom like any
+    other request.
+    """
+    rate_limit_error = check_rate_limit(request)
+    if rate_limit_error:
+        return rate_limit_error
+
+    try:
+        generator = get_text_generator()
+        draft = generate_draft_persona(body.scenario, generator)
+    except TextGenerationError as exc:
+        return err(str(exc))
+    except ValueError as exc:
+        return err(str(exc))
+
+    return ok({"display_name": draft.display_name, "message": draft.message})
+
+
+class SpeechRequest(BaseModel):
+    text: str
+
+
+@router.post("/speech")
+def synthesize_speech(body: SpeechRequest, request: Request):
+    """Reads a customer message aloud. Repeat requests for the same text
+    are served from cache instead of regenerating audio.
+    """
+    rate_limit_error = check_rate_limit(request)
+    if rate_limit_error:
+        return rate_limit_error
+
+    try:
+        synthesizer = get_speech_synthesizer()
+        cache = get_cache()
+        speech = synthesize_with_cache(body.text, synthesizer, cache)
+    except SpeechSynthesisError as exc:
+        return err(str(exc))
+    except ValueError as exc:
+        return err(str(exc))
+
+    return Response(content=speech.audio_bytes, media_type=speech.content_type)
 
 
 @router.post("/extract")

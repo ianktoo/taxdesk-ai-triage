@@ -19,19 +19,20 @@
   --color-danger-contrast: #ffffff;
   --color-danger-wash: #f3e2dd;
 
-  --font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.85rem;
-  --font-size-base: 0.95rem;
-  --font-size-lg: 1.2rem;
-  --font-size-xl: 1.5rem;
+  --font-size-xs: 0.78rem;
+  --font-size-sm: 0.9rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.35rem;
+  --font-size-xl: 2rem;
 
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 40px;
+  --space-xs: 6px;
+  --space-sm: 12px;
+  --space-md: 22px;
+  --space-lg: 34px;
+  --space-xl: 56px;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -39,8 +40,8 @@
 
   --shadow-card: 0 1px 2px rgba(28, 33, 31, 0.06), 0 1px 6px rgba(28, 33, 31, 0.05);
 
-  --topbar-height: 52px;
-  --sidebar-width: 268px;
+  --topbar-height: 64px;
+  --sidebar-width: 288px;
 
   --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-primary);
 }

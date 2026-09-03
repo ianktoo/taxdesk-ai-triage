@@ -30,6 +30,22 @@ export const en = {
   contacts: {
     heading: "Contacts",
     guide: "Pick a customer to see the message and attachments they sent in.",
+    newRequest: "New request",
+  },
+  newRequest: {
+    heading: "New request",
+    guide:
+      "Describe a scenario in a few words and generate a customer message for it, then pick which sample documents this customer would have attached.",
+    scenarioLabel: "Scenario",
+    scenarioPlaceholder: "e.g. lost their refund check and wants a replacement",
+    generateButton: "Generate message",
+    generating: "Generating...",
+    generateErrorPrefix: "Couldn't generate a message:",
+    nameLabel: "Customer name",
+    messageLabel: "Message",
+    attachmentsLabel: "Attachments (optional)",
+    sendButton: "Send to agent",
+    sendErrorPrefix: "Couldn't send:",
   },
   message: {
     attachmentsLabel: "Attachments",
@@ -41,6 +57,9 @@ export const en = {
     errorPrefix: "Couldn't send:",
     resendButton: "Send again",
     empty: "Select a contact on the left to see their message.",
+    listenButton: "Listen",
+    listenLoading: "Loading...",
+    listenErrorPrefix: "Couldn't play audio:",
   },
   queue: {
     heading: "Requests",
@@ -58,6 +77,8 @@ export const en = {
     tabOverview: "Overview",
     category: "Category",
     summary: "Summary",
+    customerMessageHeading: "Customer message",
+    summaryHeading: "System summary",
     reviewReasonsHeading: "Flagged because",
     documentType: "Document type",
     viewDocument: "View original",
