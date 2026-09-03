@@ -55,4 +55,5 @@ class UpstashRateLimiter:
             limit=self._max_requests,
             remaining=remaining,
             reset_seconds=reset_seconds,
+            window_seconds=self._window_seconds,
         )

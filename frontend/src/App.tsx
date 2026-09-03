@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { I18nProvider, useTranslations } from "./i18n";
 import {
   listPersonas,
-  runTriage,
+  streamPersonaTriage,
   submitApproval,
+  type AgentStep,
   type AuditEntry,
   type PersonaSummary,
   type RecordUpdate,
@@ -34,6 +35,9 @@ export interface Ticket {
   decision: TicketDecision;
   createdAt: string;
   decidedAt?: string;
+  /** Reply drafted for the decision made on this ticket. A proposal. */
+  outcomeDraft?: string;
+  outcomeDraftError?: string;
 }
 
 function AppShell() {
@@ -49,6 +53,8 @@ function AppShell() {
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [sendingPersonaId, setSendingPersonaId] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  // Agent steps arriving over SSE for the request currently being sent.
+  const [liveSteps, setLiveSteps] = useState<AgentStep[]>([]);
   const [creatingNew, setCreatingNew] = useState(false);
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -93,8 +99,11 @@ function AppShell() {
 
     setSendingPersonaId(personaId);
     setSendError(null);
+    setLiveSteps([]);
 
-    const result = await runTriage(personaId);
+    const result = await streamPersonaTriage(personaId, (step) =>
+      setLiveSteps((prev) => [...prev, step]),
+    );
     setSendingPersonaId(null);
 
     if (result.ok) {
@@ -143,6 +152,8 @@ function AppShell() {
     ticket: Ticket,
     decision: "approve" | "correct" | "reject",
     fieldUpdates: Record<string, string>,
+    reason: string,
+    correctedFields: string[],
   ) {
     setSubmittingDecision(true);
     setDecisionError(null);
@@ -151,8 +162,11 @@ function AppShell() {
       persona_id: ticket.personaId,
       customer_name: ticket.customerName,
       request_category: ticket.result.request_category,
+      request_category_label: ticket.result.request_category_label,
       decision,
       field_updates: decision === "reject" ? {} : fieldUpdates,
+      reason,
+      corrected_fields: decision === "correct" ? correctedFields : [],
     });
 
     setSubmittingDecision(false);
@@ -161,7 +175,15 @@ function AppShell() {
       const newDecision: TicketDecision = decision === "approve" ? "approved" : decision === "correct" ? "corrected" : "rejected";
       setTickets((prev) =>
         prev.map((tk) =>
-          tk.id === ticket.id ? { ...tk, decision: newDecision, decidedAt: new Date().toISOString() } : tk,
+          tk.id === ticket.id
+            ? {
+                ...tk,
+                decision: newDecision,
+                decidedAt: new Date().toISOString(),
+                outcomeDraft: result.data.draft_response,
+                outcomeDraftError: result.data.draft_error,
+              }
+            : tk,
         ),
       );
       setAuditEntries((prev) => [...prev, result.data.audit_entry]);
@@ -209,6 +231,7 @@ function AppShell() {
                   persona={selectedPersona}
                   sending={sendingPersonaId === selectedPersonaId}
                   error={sendingPersonaId === null ? sendError : null}
+                  liveSteps={sendingPersonaId === selectedPersonaId ? liveSteps : []}
                   lastTicket={lastTicketForPersona}
                   onSend={handleSend}
                   onViewInQueue={handleViewInQueue}
@@ -232,7 +255,9 @@ function AppShell() {
                   ticket={selectedTicket}
                   submitting={submittingDecision}
                   error={decisionError}
-                  onDecision={(decision, fieldUpdates) => handleDecision(selectedTicket, decision, fieldUpdates)}
+                  onDecision={(decision, fieldUpdates, reason, correctedFields) =>
+                    handleDecision(selectedTicket, decision, fieldUpdates, reason, correctedFields)
+                  }
                 />
               ) : (
                 <p className="main-empty">{tickets.length === 0 ? t.queue.empty : t.queue.selectPrompt}</p>

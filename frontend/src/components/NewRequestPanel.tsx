@@ -3,9 +3,11 @@ import { useTranslations } from "../i18n";
 import {
   generatePersona,
   listSampleDocuments,
-  runCustomTriage,
+  streamCustomTriage,
+  type AgentStep,
   type TriageResult,
 } from "../client/apiClient";
+import { AgentTrace } from "./AgentTrace";
 import { Banner } from "./Banner";
 import { SendIcon, SparkleIcon } from "./icons";
 import { Spinner } from "./Spinner";
@@ -30,6 +32,7 @@ export function NewRequestPanel({ onSent }: Props) {
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   const [sending, setSending] = useState(false);
+  const [liveSteps, setLiveSteps] = useState<AgentStep[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,11 +73,16 @@ export function NewRequestPanel({ onSent }: Props) {
     setSending(true);
     setSendError(null);
 
-    const result = await runCustomTriage({
-      customer_name: displayName.trim(),
-      message: message.trim(),
-      attachments: selectedDocs,
-    });
+    setLiveSteps([]);
+
+    const result = await streamCustomTriage(
+      {
+        customer_name: displayName.trim(),
+        message: message.trim(),
+        attachments: selectedDocs,
+      },
+      (step) => setLiveSteps((prev) => [...prev, step]),
+    );
 
     setSending(false);
 
@@ -172,6 +180,12 @@ export function NewRequestPanel({ onSent }: Props) {
               {sending ? t.message.sending : t.newRequest.sendButton}
             </button>
           </div>
+
+          {sending && (
+            <section className="live-trace">
+              <AgentTrace steps={liveSteps} live />
+            </section>
+          )}
         </>
       )}
     </article>

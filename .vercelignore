@@ -1,0 +1,27 @@
+# Files that must never reach a deployment bundle.
+#
+# api/config/settings.py calls load_dotenv(REPO_ROOT / ".env") at import
+# time, so a .env that ships would be read at runtime by the deployed
+# function - putting live keys inside the bundle rather than in the
+# project's environment variables, where they can be rotated and
+# audited. Configuration belongs in `vercel env`, never in the upload.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local-only weight. None of this is needed to build or run the
+# deployment, and shipping it slows every upload.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+frontend/node_modules/
+frontend/dist/
+.scratch/
+demo.sh
+walkthrough-script.md
+plan.md
+CLAUDE.md

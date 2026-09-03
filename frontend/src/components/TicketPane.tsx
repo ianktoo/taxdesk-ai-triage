@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslations } from "../i18n";
 import { documentUrl } from "../client/apiClient";
 import type { Ticket } from "../App";
+import { AgentTrace } from "./AgentTrace";
 import { FileIcon } from "./icons";
 import { ListenButton } from "./ListenButton";
 import { Spinner } from "./Spinner";
@@ -10,10 +11,15 @@ interface Props {
   ticket: Ticket;
   submitting: boolean;
   error: string | null;
-  onDecision: (decision: "approve" | "correct" | "reject", fieldUpdates: Record<string, string>) => void;
+  onDecision: (
+    decision: "approve" | "correct" | "reject",
+    fieldUpdates: Record<string, string>,
+    reason: string,
+    correctedFields: string[],
+  ) => void;
 }
 
-type Tab = "documents" | "overview";
+type Tab = "documents" | "overview" | "trace";
 
 const STATUS_MESSAGE_KEY = {
   approved: "approvedMessage",
@@ -33,6 +39,41 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
 
   const [tab, setTab] = useState<Tab>("documents");
   const [activeAttachment, setActiveAttachment] = useState(result.attachments[0]?.filename ?? "");
+
+  // The responder agent proposes; the reviewer owns the wording. Held
+  // in local state so edits survive tab switches within this ticket.
+  const [draft, setDraft] = useState(result.draft_response);
+  const [copied, setCopied] = useState(false);
+
+  // Rejecting asks for a reason first: it is what the customer is told
+  // and what the audit trail records, so it should not be a side effect
+  // of one click. Prefilled with why the system flagged the request,
+  // since that is usually the reason, and always editable.
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState(result.review_reasons.join("; "));
+
+  // The reply drafted for the decision just made, once one exists. The
+  // parent updates this ticket in place rather than remounting, so the
+  // draft arrives as a changed prop and is adopted during render —
+  // reseeding from an effect would render once with a stale value.
+  const [outcomeDraft, setOutcomeDraft] = useState(ticket.outcomeDraft ?? "");
+  const [seededFrom, setSeededFrom] = useState(ticket.outcomeDraft);
+  if (ticket.outcomeDraft !== seededFrom) {
+    setSeededFrom(ticket.outcomeDraft);
+    setOutcomeDraft(ticket.outcomeDraft ?? "");
+  }
+
+  async function handleCopyDraft(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be denied or unavailable over plain HTTP.
+      // The draft is already selectable in the textarea, so there is
+      // nothing to recover from and nothing worth interrupting for.
+    }
+  }
 
   // The parent remounts this component (key={ticket.id}) whenever the
   // selected ticket changes, so this only needs to compute once per mount.
@@ -58,6 +99,23 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
       }
     }
     return updates;
+  }
+
+  /** Only the fields the reviewer actually edited.
+   *
+   * buildFieldUpdates sends every field so the record write stays
+   * complete, which means it can't be diffed to find the edits. The
+   * extracted value on the ticket is the baseline to compare against.
+   */
+  function correctedFieldNames(): string[] {
+    const names = new Set<string>();
+    for (const attachment of result.attachments) {
+      for (const field of attachment.extraction.fields) {
+        const current = editedValues[fieldKey(attachment.filename, field.name)] ?? field.value;
+        if (current !== field.value) names.add(field.name);
+      }
+    }
+    return [...names];
   }
 
   const currentAttachment = result.attachments.find((a) => a.filename === activeAttachment) ?? result.attachments[0];
@@ -87,6 +145,9 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
         <button type="button" role="tab" aria-selected={tab === "overview"} onClick={() => setTab("overview")}>
           {t.ticket.tabOverview}
         </button>
+        <button type="button" role="tab" aria-selected={tab === "trace"} onClick={() => setTab("trace")}>
+          {t.ticket.tabTrace}
+        </button>
       </div>
 
       {tab === "overview" && (
@@ -101,6 +162,41 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
           <p className="guide-text" style={{ marginBottom: "var(--space-md)" }}>
             {result.summary}
           </p>
+          {result.conflicts.length > 0 && (
+            <>
+              <h4>{t.ticket.conflictsHeading}</h4>
+              <ul className="conflict-list">
+                {result.conflicts.map((conflict) => (
+                  <li key={conflict.field}>
+                    <span className="conflict-field">{conflict.field.replace(/_/g, " ")}</span>
+                    <ul>
+                      {conflict.observations.map((observation) => (
+                        <li key={observation.filename} className="mono">
+                          {t.ticket.conflictSays(observation.filename, observation.value)}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {result.agreements.length > 0 && (
+            <>
+              <h4>{t.ticket.agreementsHeading}</h4>
+              <ul className="agreement-list">
+                {result.agreements.map((agreement) => (
+                  <li key={agreement.field}>
+                    <span className="conflict-field">{agreement.field.replace(/_/g, " ")}</span>{" "}
+                    <span className="mono">{agreement.value}</span>{" "}
+                    <span className="guide-text">{t.ticket.agreementSources(agreement.filenames.length)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
           {!isReady && result.review_reasons.length > 0 && (
             <>
               <h4>{t.ticket.reviewReasonsHeading}</h4>
@@ -111,8 +207,32 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
               </ul>
             </>
           )}
+
+          {result.draft_response && (
+            <>
+              <h4>{t.ticket.draftHeading}</h4>
+              <p className="guide-text">{t.ticket.draftGuide}</p>
+              <label className="sr-only" htmlFor="draft-response">
+                {t.ticket.draftHeading}
+              </label>
+              <textarea
+                id="draft-response"
+                className="draft-response"
+                rows={7}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+              <div className="listen-row">
+                <button type="button" onClick={() => handleCopyDraft(draft)}>
+                  {copied ? t.ticket.draftCopied : t.ticket.draftCopy}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
+
+      {tab === "trace" && <AgentTrace steps={result.agent_trace} />}
 
       {tab === "documents" && currentAttachment && (
         <div>
@@ -198,14 +318,42 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
         </p>
       )}
 
-      {!resolved && (
+      {resolved && ticket.outcomeDraftError && (
+        <p className="banner error" role="alert">
+          {t.ticket.outcomeDraftFailed} {ticket.outcomeDraftError}
+        </p>
+      )}
+
+      {resolved && outcomeDraft && (
+        <section className="outcome-draft">
+          <h4>{t.ticket.outcomeDraftHeading}</h4>
+          <p className="guide-text">{t.ticket.outcomeDraftGuide}</p>
+          <label className="sr-only" htmlFor="outcome-draft">
+            {t.ticket.outcomeDraftHeading}
+          </label>
+          <textarea
+            id="outcome-draft"
+            className="draft-response"
+            rows={8}
+            value={outcomeDraft}
+            onChange={(event) => setOutcomeDraft(event.target.value)}
+          />
+          <div className="listen-row">
+            <button type="button" onClick={() => handleCopyDraft(outcomeDraft)}>
+              {copied ? t.ticket.draftCopied : t.ticket.draftCopy}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {!resolved && !rejecting && (
         <div className="action-row">
           <button
             type="button"
             className="primary"
             disabled={submitting}
             aria-busy={submitting}
-            onClick={() => onDecision("approve", buildFieldUpdates())}
+            onClick={() => onDecision("approve", buildFieldUpdates(), "", [])}
           >
             {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.approve}
           </button>
@@ -213,20 +361,46 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
             type="button"
             disabled={submitting}
             aria-busy={submitting}
-            onClick={() => onDecision("correct", buildFieldUpdates())}
+            onClick={() => onDecision("correct", buildFieldUpdates(), "", correctedFieldNames())}
           >
             {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.correct}
           </button>
-          <button
-            type="button"
-            className="danger"
-            disabled={submitting}
-            aria-busy={submitting}
-            onClick={() => onDecision("reject", {})}
-          >
-            {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.reject}
+          <button type="button" className="danger" disabled={submitting} onClick={() => setRejecting(true)}>
+            {t.ticket.reject}
           </button>
         </div>
+      )}
+
+      {!resolved && rejecting && (
+        <section className="reject-panel">
+          <label htmlFor="reject-reason">
+            <strong>{t.ticket.rejectReasonLabel}</strong>
+          </label>
+          <p className="guide-text">{t.ticket.rejectReasonGuide}</p>
+          <textarea
+            id="reject-reason"
+            className="draft-response"
+            rows={3}
+            autoFocus
+            placeholder={t.ticket.rejectReasonPlaceholder}
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+          />
+          <div className="action-row">
+            <button
+              type="button"
+              className="danger"
+              disabled={submitting || rejectReason.trim() === ""}
+              aria-busy={submitting}
+              onClick={() => onDecision("reject", {}, rejectReason.trim(), [])}
+            >
+              {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.rejectConfirm}
+            </button>
+            <button type="button" disabled={submitting} onClick={() => setRejecting(false)}>
+              {t.ticket.rejectCancel}
+            </button>
+          </div>
+        </section>
       )}
     </article>
   );

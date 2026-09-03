@@ -749,7 +749,14 @@ td.field-confidence.low {
 .listen-control {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-sm);
+}
+
+.listen-progress {
+  inline-size: 120px;
+  block-size: 4px;
+  accent-color: var(--color-primary);
 }
 
 .listen-control button {
@@ -1316,5 +1323,197 @@ dl.record-fields dd {
 
   .poc-chip {
     display: none;
+  }
+}
+
+/* ---- agent trace ---- */
+
+/* The step number is information, not decoration: the trace is a
+   sequence and its order is what the reviewer is reading. */
+.trace-list {
+  list-style: none;
+  counter-reset: trace-step;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.trace-step {
+  counter-increment: trace-step;
+  position: relative;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-lg);
+  border-left: 2px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.trace-step::before {
+  content: counter(trace-step);
+  position: absolute;
+  left: var(--space-xs);
+  top: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Status is encoded in the rail as well as the label, so a step that
+   fell back reads at a glance without being read word by word. */
+.trace-step.fallback {
+  border-left-color: var(--color-flag);
+}
+
+.trace-step.error {
+  border-left-color: var(--color-danger);
+}
+
+.trace-step.skipped {
+  opacity: 0.72;
+}
+
+.trace-step-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.trace-agent {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.trace-action {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.trace-status {
+  font-size: var(--font-size-xs);
+  padding: 1px var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--color-flag-wash);
+  color: var(--color-flag);
+}
+
+.trace-status.error {
+  background: var(--color-danger-wash);
+  color: var(--color-danger);
+}
+
+.trace-meta {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.trace-detail {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  max-width: 68ch;
+}
+
+/* ---- cross-document comparison ---- */
+
+.conflict-list,
+.agreement-list {
+  margin: 0 0 var(--space-md);
+  padding-left: var(--space-md);
+}
+
+.conflict-list ul {
+  padding-left: var(--space-md);
+  margin: var(--space-xs) 0 0;
+}
+
+.conflict-field {
+  font-weight: 600;
+}
+
+.draft-response {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  padding: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.draft-response:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---- decision outcome ---- */
+
+.outcome-draft,
+.reject-panel {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+/* A rejection is the one decision the customer hears a "no" for, so the
+   panel that composes it carries the danger accent the button does. */
+.reject-panel {
+  border-color: var(--color-danger);
+}
+
+.outcome-draft h4,
+.reject-panel label {
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+.reject-panel .action-row {
+  margin-top: var(--space-sm);
+}
+
+/* ---- live agent trace (streaming) ---- */
+
+.live-trace {
+  margin-top: var(--space-md);
+}
+
+/* The newest step reads as in-progress: the rail is tinted and pulses
+   until the next step displaces it. */
+.trace-step.latest {
+  border-left-color: var(--color-primary);
+}
+
+.trace-step.latest::after {
+  content: "";
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: trace-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes trace-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-step.latest::after {
+    animation: none;
   }
 }

@@ -15,16 +15,48 @@ authentication, and no real customer data - everything is mock/sample data.
 ## How it works
 
 1. Pick a customer persona (a canned message + a few sample documents).
-2. The app runs each attachment through Nutrient DWS to classify it and
-   extract fields with a confidence score.
-3. It matches the message to a request category (change of address, name
-   change, etc.) and writes a one-line summary.
-4. Based on confidence scores, the request is marked "Ready to auto-approve"
-   or "Needs human review".
-5. A review screen shows the extracted fields side by side so a human can
-   Approve, Correct & approve, or Reject.
-6. Every step is logged to an audit trail, and approvals update a mock
+2. An **orchestrator** runs each attachment through Nutrient DWS to classify
+   it and extract fields with a confidence score.
+3. It then delegates to specialist agents, in order: a **classifier**
+   (which request category is this), a **comparison** agent (do the
+   documents agree with each other), and a **validator** (is the evidence
+   enough to act on).
+4. The orchestrator makes the routing decision itself, in ordinary Python:
+   the request is "Ready to auto-approve" or "Needs human review" based on
+   `AUTO_APPROVE_CONFIDENCE_THRESHOLD` applied to real vendor confidence
+   scores, plus any cross-document conflict. Agents contribute reasons to
+   hold a request; nothing an agent returns can clear one.
+5. A **summarizer** writes the reviewer's brief and a **responder** drafts a
+   customer reply. The draft is a proposal only — nothing is ever sent.
+6. A review screen shows the extracted fields side by side so a human can
+   Approve, Correct & approve, or Reject, with an **Agent trace** tab listing
+   every delegation, tool call and model call in the run.
+7. Every decision is logged to an audit trail, and approvals update a mock
    customer record.
+
+Agents reason through the `Reasoning` capability, not a vendor SDK. With no
+`OPENAI_API_KEY` the deterministic adapter takes over and the whole pipeline
+still runs end to end; if a single model call fails mid-run, that one step
+falls back to rules and the trace records it as such.
+
+## Streaming
+
+A run takes several seconds on a live model, so triage is also exposed over
+Server-Sent Events and the UI shows each step as it lands rather than after
+the fact.
+
+| Route | Returns |
+|---|---|
+| `POST /api/triage/{persona_id}` | the `{ok, data}` envelope |
+| `POST /api/triage/{persona_id}/stream` | `step` events, then the same envelope |
+| `POST /api/triage/custom` | the `{ok, data}` envelope |
+| `POST /api/triage/custom/stream` | `step` events, then the same envelope |
+
+Every streaming route has a non-streaming twin, and the stream's terminal
+event is byte-for-byte the twin's response, so the one response contract still
+holds at this boundary — see `api/interface/sse.py` for the full contract. The
+frontend falls back to the non-streaming route automatically if the stream
+cannot be established, so a buffering proxy costs the live view, not the app.
 
 ## Project layout
 
@@ -33,8 +65,9 @@ api/            FastAPI backend (deployed as Vercel serverless functions)
   config/       env vars, active-adapter selection
   integrations/ vendor adapters behind capability contracts
   services/     business logic
+    agents/     the specialist agents, one file each
   interface/    API routes
-  data/         hardcoded demo personas
+  data/         hardcoded demo personas, request taxonomy
 data/sample_docs/  generated mock PDFs used by the personas
 frontend/       React + TypeScript app (Vite)
 tests/          contract tests (adapters) and interface smoke tests
@@ -112,5 +145,9 @@ settings (Nutrient key, and optionally the Upstash rate-limit settings).
 | `AUTO_APPROVE_CONFIDENCE_THRESHOLD` | Minimum field confidence to auto-approve | `0.85` |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (optional) | (empty) |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional) | (empty) |
-| `RATE_LIMIT_MAX_REQUESTS` | Requests allowed per IP per window | `5` |
+| `RATE_LIMIT_MAX_REQUESTS` | Requests allowed per IP per window | `30` |
 | `RATE_LIMIT_WINDOW_SECONDS` | Rate-limit window length in seconds | `300` |
+| `OPENAI_API_KEY` | Enables AI personas, voice, and agent reasoning | (empty) |
+| `AGENT_REASONER` | `openai`, or `mock` to force the deterministic rules | `openai` |
+| `OPENAI_REASONING_MODEL` | Model backing the agents | `gpt-4o-mini` |
+| `REASONING_TIMEOUT_SECONDS` | Per-agent model call timeout | `20` |

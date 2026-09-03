@@ -15,16 +15,24 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def _humanize(seconds: int) -> str:
+    if seconds < 60:
+        return "1 second" if seconds == 1 else f"{seconds} seconds"
+    minutes = round(seconds / 60)
+    return "1 minute" if minutes == 1 else f"{minutes} minutes"
+
+
 def check_rate_limit(request: Request) -> dict | None:
     """Returns an {ok:false,error} dict if the caller is over quota, else None."""
     limiter = get_rate_limiter()
     result = limiter.check(client_ip(request))
     if result.allowed:
         return None
-    return {
-        "ok": False,
-        "error": (
-            f"Demo limit reached ({result.limit} requests per "
-            f"{result.reset_seconds}s). Please try again shortly."
-        ),
-    }
+
+    # The quota and the wait are two different numbers, and saying
+    # "N requests per <seconds remaining>" reads as a quota that shrinks
+    # every time you retry. Report the window for the quota and the TTL
+    # for the wait.
+    quota = f"{result.limit} requests per {_humanize(result.window_seconds)}"
+    wait = f"Try again in about {_humanize(result.reset_seconds)}."
+    return {"ok": False, "error": f"Demo limit reached ({quota}). {wait}"}

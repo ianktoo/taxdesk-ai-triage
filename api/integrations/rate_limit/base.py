@@ -14,7 +14,12 @@ class RateLimitCheck:
     allowed: bool
     limit: int
     remaining: int
+    # Seconds until the current window resets, i.e. how long a blocked
+    # caller must wait. Distinct from window_seconds: this one counts
+    # down, and is what a "try again in N" message needs.
     reset_seconds: int
+    # Length of the whole window, i.e. the period `limit` applies to.
+    window_seconds: int = 0
 
 
 class RateLimitError(Exception):

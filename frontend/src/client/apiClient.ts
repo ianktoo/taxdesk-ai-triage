@@ -76,6 +76,38 @@ export interface AttachmentResult {
   low_confidence_fields: string[];
 }
 
+/** One observable action from the orchestrated run.
+ *
+ * Mirrors AgentStep in api/integrations/reasoning/base.py. An empty
+ * `model` means the step was deterministic and never called one.
+ */
+export interface AgentStep {
+  index: number;
+  agent: string;
+  action: "delegate" | "tool_call" | "reason" | "decide";
+  status: "ok" | "error" | "fallback" | "skipped";
+  detail: string;
+  duration_ms: number;
+  model: string;
+}
+
+export interface FieldObservation {
+  filename: string;
+  value: string;
+}
+
+export interface FieldAgreement {
+  field: string;
+  value: string;
+  filenames: string[];
+}
+
+export interface FieldConflict {
+  field: string;
+  note: string;
+  observations: FieldObservation[];
+}
+
 export interface TriageResult {
   persona_id: string;
   customer_name: string;
@@ -86,10 +118,115 @@ export interface TriageResult {
   status: "ready_to_auto_approve" | "needs_human_review";
   review_reasons: string[];
   attachments: AttachmentResult[];
+  agent_trace: AgentStep[];
+  agreements: FieldAgreement[];
+  conflicts: FieldConflict[];
+  /** A proposal for the reviewer to approve or edit. Never sent by the system. */
+  draft_response: string;
+  classifier_rationale: string;
+  reasoner_model: string;
 }
 
 export function runTriage(personaId: string) {
   return request<TriageResult>(`/triage/${personaId}`, { method: "POST" });
+}
+
+/** Splits an SSE byte stream into (event, data) pairs.
+ *
+ * Frames are separated by a blank line and can be split across network
+ * chunks, so the tail of a read is held back until its terminating
+ * blank line arrives.
+ */
+async function* readSseFrames(body: ReadableStream<Uint8Array>) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let split = buffer.indexOf("\n\n");
+      while (split !== -1) {
+        const frame = buffer.slice(0, split);
+        buffer = buffer.slice(split + 2);
+        split = buffer.indexOf("\n\n");
+
+        let event = "";
+        let data = "";
+        for (const line of frame.split("\n")) {
+          if (line.startsWith("event: ")) event = line.slice(7);
+          else if (line.startsWith("data: ")) data = line.slice(6);
+        }
+        if (event && data) yield { event, data };
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/** Runs triage over SSE, reporting each agent step as it happens.
+ *
+ * The terminal event carries the same {ok,data}/{ok,error} envelope the
+ * non-streaming route returns, so the resolved value here is identical
+ * either way. If streaming is unavailable for any reason — an old
+ * browser, a proxy that buffers or rejects the stream — this falls back
+ * to the plain endpoint and the caller simply sees no steps.
+ */
+export async function streamTriage(
+  path: string,
+  body: unknown,
+  onStep: (step: AgentStep) => void,
+  fallback: () => Promise<ApiResult<TriageResult>>,
+): Promise<ApiResult<TriageResult>> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    return fallback();
+  }
+
+  if (!response.ok || !response.body) return fallback();
+
+  let terminal: ApiResult<TriageResult> | null = null;
+  try {
+    for await (const frame of readSseFrames(response.body)) {
+      const payload = JSON.parse(frame.data);
+      if (frame.event === "step") {
+        onStep(payload as AgentStep);
+      } else if (frame.event === "result" || frame.event === "error") {
+        terminal = payload as ApiResult<TriageResult>;
+      }
+    }
+  } catch (error) {
+    // The stream broke partway. Steps already shown stay on screen, but
+    // there is no result, so re-run through the non-streaming route
+    // rather than reporting a half-finished run as a failure.
+    if (!terminal) return fallback();
+    return { ok: false, error: error instanceof Error ? error.message : "Stream error" };
+  }
+
+  // A stream that ended without a terminal event told us nothing
+  // conclusive; the plain route is the source of truth.
+  return terminal ?? (await fallback());
+}
+
+export function streamPersonaTriage(personaId: string, onStep: (step: AgentStep) => void) {
+  return streamTriage(`/triage/${personaId}/stream`, undefined, onStep, () => runTriage(personaId));
+}
+
+export function streamCustomTriage(
+  body: { customer_name: string; message: string; attachments: string[] },
+  onStep: (step: AgentStep) => void,
+) {
+  return streamTriage(`/triage/custom/stream`, body, onStep, () => runCustomTriage(body));
 }
 
 export interface RecordUpdate {
@@ -107,14 +244,22 @@ export interface AuditEntry {
 export interface ApprovalResponse {
   record: RecordUpdate | null;
   audit_entry: AuditEntry;
+  /** Reply drafted for the decision just made. A proposal, never sent. */
+  draft_response: string;
+  /** Set when the draft could not be produced; the decision still stands. */
+  draft_error: string;
+  agent_trace: AgentStep[];
 }
 
 export function submitApproval(body: {
   persona_id: string;
   customer_name: string;
   request_category: string;
+  request_category_label: string;
   decision: "approve" | "correct" | "reject";
   field_updates: Record<string, string>;
+  reason: string;
+  corrected_fields: string[];
 }) {
   return request<ApprovalResponse>("/approve", {
     method: "POST",

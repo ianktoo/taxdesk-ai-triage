@@ -1,4 +1,9 @@
-"""Business logic: attachment triage.
+"""Business logic: rule-based attachment triage.
+
+The deterministic baseline. `api.services.orchestrator_service` is the
+agent-driven path that supersedes it for the live product; this module
+stays as the behaviour that path degrades to, and it owns the
+AttachmentResult/TriageResult shapes both paths return.
 
 Talks to the DocumentExtraction capability only through its contract
 (api.integrations.document_extraction.base). No vendor SDK imports here.
@@ -7,37 +12,8 @@ from dataclasses import dataclass, field
 
 from api.config.settings import AUTO_APPROVE_CONFIDENCE_THRESHOLD, SAMPLE_DOCS_DIR
 from api.data.personas import Persona
+from api.data.taxonomy import categorize_by_rules, label_for
 from api.integrations.document_extraction.base import DocumentExtractor, ExtractionResult
-
-# Document type -> request category this business recognizes. Types not
-# listed here (receipts, invoices, letters, ...) fall through to a
-# message-text check and then to "unclassified" - the system doesn't
-# force every attachment into a tax-relevant bucket just because it's
-# there.
-_CATEGORY_BY_DOC_TYPE = {
-    "change_of_address_form": "change_of_address",
-    "utility_bill": "change_of_address",
-    "irs_form_8822": "change_of_address",
-    "name_change_request": "name_change",
-    "irs_form_w4": "update_withholding",
-    "w2": "document_upload",
-    "state_id": "document_upload",
-}
-
-# Message-text fallback for categories no document type maps to (a
-# refund inquiry usually has no attachment that proves it either way).
-_CATEGORY_KEYWORDS = {
-    "refund_status_inquiry": ("refund",),
-}
-
-_CATEGORY_LABELS = {
-    "change_of_address": "Change of address",
-    "name_change": "Name change",
-    "update_withholding": "Update withholding",
-    "document_upload": "Document upload",
-    "refund_status_inquiry": "Refund status inquiry",
-    "unclassified": "Unclassified",
-}
 
 
 @dataclass
@@ -61,21 +37,8 @@ class TriageResult:
 
 
 def _categorize(message: str, attachments: list[AttachmentResult]) -> tuple[str, bool]:
-    """Returns (category, has_document_evidence). A category reached only
-    via message keywords, or not reached at all, has no document backing
-    it, so it can never be auto-approved: there's nothing to verify.
-    """
-    for att in attachments:
-        category = _CATEGORY_BY_DOC_TYPE.get(att.extraction.document_type)
-        if category:
-            return category, True
-
-    message_lower = message.lower()
-    for category, keywords in _CATEGORY_KEYWORDS.items():
-        if any(keyword in message_lower for keyword in keywords):
-            return category, False
-
-    return "unclassified", False
+    """Returns (category, has_document_evidence)."""
+    return categorize_by_rules(message, [a.extraction.document_type for a in attachments])
 
 
 def _build_summary(persona: Persona, category: str, attachments: list[AttachmentResult]) -> str:
@@ -134,7 +97,7 @@ def run_triage(persona: Persona, extractor: DocumentExtractor) -> TriageResult:
     ]
     if not has_evidence:
         review_reasons.append(
-            f"no attachment confirms the '{_CATEGORY_LABELS.get(category, category)}' category, needs manual verification"
+            f"no attachment confirms the '{label_for(category)}' category, needs manual verification"
         )
     status = "needs_human_review" if review_reasons else "ready_to_auto_approve"
 
@@ -143,7 +106,7 @@ def run_triage(persona: Persona, extractor: DocumentExtractor) -> TriageResult:
         customer_name=persona.display_name,
         message=persona.message,
         request_category=category,
-        request_category_label=_CATEGORY_LABELS.get(category, category),
+        request_category_label=label_for(category),
         summary=summary,
         status=status,
         review_reasons=review_reasons,

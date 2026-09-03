@@ -1,5 +1,6 @@
 import { useTranslations } from "../i18n";
-import { documentUrl, type PersonaSummary } from "../client/apiClient";
+import { documentUrl, type AgentStep, type PersonaSummary } from "../client/apiClient";
+import { AgentTrace } from "./AgentTrace";
 import type { Ticket } from "../App";
 import { PaperclipIcon, SendIcon, CheckCircleIcon } from "./icons";
 import { ListenButton } from "./ListenButton";
@@ -10,12 +11,22 @@ interface Props {
   persona: PersonaSummary | null;
   sending: boolean;
   error: string | null;
+  /** Agent steps streaming in while this request is being processed. */
+  liveSteps: AgentStep[];
   lastTicket: Ticket | null;
   onSend: (personaId: string) => void;
   onViewInQueue: (ticketId: string) => void;
 }
 
-export function MessagePane({ persona, sending, error, lastTicket, onSend, onViewInQueue }: Props) {
+export function MessagePane({
+  persona,
+  sending,
+  error,
+  liveSteps,
+  lastTicket,
+  onSend,
+  onViewInQueue,
+}: Props) {
   const t = useTranslations();
 
   if (!persona) {
@@ -64,9 +75,14 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
       </div>
 
       {sending && (
-        <p className="banner notice" role="status">
-          <Spinner /> {t.message.processingNotice}
-        </p>
+        <>
+          <p className="banner notice" role="status">
+            <Spinner /> {t.message.processingNotice}
+          </p>
+          <section className="live-trace">
+            <AgentTrace steps={liveSteps} live />
+          </section>
+        </>
       )}
 
       {error && (
