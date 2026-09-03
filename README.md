@@ -113,4 +113,4 @@ settings (Nutrient key, and optionally the Upstash rate-limit settings).
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (optional) | (empty) |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional) | (empty) |
 | `RATE_LIMIT_MAX_REQUESTS` | Requests allowed per IP per window | `5` |
-| `RATE_LIMIT_WINDOW_SECONDS` | Rate-limit window length in seconds | `3600` |
+| `RATE_LIMIT_WINDOW_SECONDS` | Rate-limit window length in seconds | `300` |
