@@ -6,10 +6,10 @@
   --color-text: #1c211f;
   --color-text-muted: #6a6a5e;
 
-  --color-primary: #2b6e55;
-  --color-primary-hover: #22563f;
+  --color-primary: #2a55a3;
+  --color-primary-hover: #1e4483;
   --color-primary-contrast: #ffffff;
-  --color-primary-wash: #e3ede8;
+  --color-primary-wash: #e5ecf8;
 
   --color-flag: #b8862e;
   --color-flag-wash: #f6ecd8;
@@ -55,10 +55,10 @@
     --color-text: #e7ece9;
     --color-text-muted: #8b948f;
 
-    --color-primary: #4f9c80;
-    --color-primary-hover: #6bb59a;
-    --color-primary-contrast: #06120d;
-    --color-primary-wash: #1c2c26;
+    --color-primary: #6ca0f0;
+    --color-primary-hover: #8ab4f5;
+    --color-primary-contrast: #071a33;
+    --color-primary-wash: #1c2c42;
 
     --color-flag: #d1a35a;
     --color-flag-wash: #2f2618;
@@ -80,10 +80,10 @@
   --color-text: #e7ece9;
   --color-text-muted: #8b948f;
 
-  --color-primary: #4f9c80;
-  --color-primary-hover: #6bb59a;
-  --color-primary-contrast: #06120d;
-  --color-primary-wash: #1c2c26;
+  --color-primary: #6ca0f0;
+  --color-primary-hover: #8ab4f5;
+  --color-primary-contrast: #071a33;
+  --color-primary-wash: #1c2c42;
 
   --color-flag: #d1a35a;
   --color-flag-wash: #2f2618;

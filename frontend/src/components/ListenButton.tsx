@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "../i18n";
 import { synthesizeSpeech } from "../client/apiClient";
 import { SpeakerIcon } from "./icons";
+import { Spinner } from "./Spinner";
 
 export function ListenButton({ text }: { text: string }) {
   const t = useTranslations();
@@ -37,7 +38,7 @@ export function ListenButton({ text }: { text: string }) {
   return (
     <span className="listen-control">
       <button type="button" onClick={handleClick} disabled={loading} aria-busy={loading}>
-        <SpeakerIcon width={14} height={14} />
+        {loading ? <Spinner /> : <SpeakerIcon width={14} height={14} />}
         {loading ? t.message.listenLoading : t.message.listenButton}
       </button>
       {error && (

@@ -1,16 +1,18 @@
 import { useTranslations } from "../i18n";
 import { SparkleIcon } from "./icons";
+import { Spinner } from "./Spinner";
 import type { PersonaSummary } from "../client/apiClient";
 
 interface Props {
   personas: PersonaSummary[];
+  loading: boolean;
   selectedPersonaId: string | null;
   creatingNew: boolean;
   onSelect: (personaId: string) => void;
   onStartNew: () => void;
 }
 
-export function ContactSidebar({ personas, selectedPersonaId, creatingNew, onSelect, onStartNew }: Props) {
+export function ContactSidebar({ personas, loading, selectedPersonaId, creatingNew, onSelect, onStartNew }: Props) {
   const t = useTranslations();
 
   return (
@@ -26,7 +28,11 @@ export function ContactSidebar({ personas, selectedPersonaId, creatingNew, onSel
           </div>
         </button>
       </div>
-      {personas.length === 0 ? (
+      {loading ? (
+        <p className="sidebar-empty">
+          <Spinner /> {t.contacts.loading}
+        </p>
+      ) : personas.length === 0 ? (
         <p className="sidebar-empty">{t.contacts.guide}</p>
       ) : (
         <ul className="sidebar-list">

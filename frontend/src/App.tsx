@@ -41,6 +41,7 @@ function AppShell() {
   const [entered, setEntered] = useState(false);
 
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
+  const [personasLoading, setPersonasLoading] = useState(true);
   const [personaLoadError, setPersonaLoadError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("customer");
 
@@ -59,6 +60,7 @@ function AppShell() {
 
   useEffect(() => {
     listPersonas().then((result) => {
+      setPersonasLoading(false);
       if (result.ok) {
         setPersonas(result.data);
         setSelectedPersonaId((current) => current ?? result.data[0]?.id ?? null);
@@ -180,6 +182,7 @@ function AppShell() {
           <>
             <ContactSidebar
               personas={personas}
+              loading={personasLoading}
               selectedPersonaId={selectedPersonaId}
               creatingNew={creatingNew}
               onSelect={handleSelectPersona}

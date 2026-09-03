@@ -3,6 +3,7 @@ import { useTranslations } from "../i18n";
 import { extractUploadedDocument, type ExtractionResult } from "../client/apiClient";
 import { Banner } from "./Banner";
 import { FileIcon } from "./icons";
+import { Spinner } from "./Spinner";
 
 const CONFIDENCE_THRESHOLD = 0.85;
 
@@ -78,7 +79,7 @@ export function UploadPanel() {
           aria-busy={analyzing}
           onClick={handleAnalyze}
         >
-          {analyzing ? t.upload.analyzing : t.upload.analyzeButton}
+          {analyzing && <Spinner />} {analyzing ? t.upload.analyzing : t.upload.analyzeButton}
         </button>
         {selectedFile && (
           <button type="button" className="danger" disabled={analyzing} onClick={handleRemove}>

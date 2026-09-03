@@ -3,6 +3,7 @@ import { documentUrl, type PersonaSummary } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { PaperclipIcon, SendIcon, CheckCircleIcon } from "./icons";
 import { ListenButton } from "./ListenButton";
+import { Spinner } from "./Spinner";
 
 interface Props {
   persona: PersonaSummary | null;
@@ -36,7 +37,7 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
         )}
         {sending && (
           <button type="button" className="primary" disabled aria-busy="true">
-            {t.message.sending}
+            <Spinner /> {t.message.sending}
           </button>
         )}
       </div>
@@ -61,6 +62,12 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
         ))}
       </div>
 
+      {sending && (
+        <p className="banner notice" role="status">
+          <Spinner /> {t.message.processingNotice}
+        </p>
+      )}
+
       {error && (
         <p role="alert" className="banner error">
           {t.message.errorPrefix} {error}
@@ -79,7 +86,13 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
               {t.message.viewInQueue}
             </button>
             <button type="button" disabled={sending} onClick={() => onSend(persona.id)}>
-              {sending ? t.message.sending : t.message.resendButton}
+              {sending ? (
+                <>
+                  <Spinner /> {t.message.sending}
+                </>
+              ) : (
+                t.message.resendButton
+              )}
             </button>
           </div>
         </div>

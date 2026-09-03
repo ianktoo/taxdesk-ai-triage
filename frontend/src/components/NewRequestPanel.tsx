@@ -8,6 +8,7 @@ import {
 } from "../client/apiClient";
 import { Banner } from "./Banner";
 import { SendIcon, SparkleIcon } from "./icons";
+import { Spinner } from "./Spinner";
 
 interface Props {
   onSent: (customerName: string, message: string, result: TriageResult) => void;
@@ -17,6 +18,7 @@ export function NewRequestPanel({ onSent }: Props) {
   const t = useTranslations();
 
   const [availableDocs, setAvailableDocs] = useState<string[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
   const [docsError, setDocsError] = useState<string | null>(null);
 
   const [scenario, setScenario] = useState("");
@@ -32,6 +34,7 @@ export function NewRequestPanel({ onSent }: Props) {
 
   useEffect(() => {
     listSampleDocuments().then((result) => {
+      setDocsLoading(false);
       if (result.ok) {
         setAvailableDocs(result.data);
       } else {
@@ -101,7 +104,7 @@ export function NewRequestPanel({ onSent }: Props) {
       />
       <div className="action-row" style={{ marginTop: "var(--space-sm)", marginBottom: "var(--space-md)" }}>
         <button type="button" className="primary" disabled={!scenario.trim() || generating} onClick={handleGenerate}>
-          <SparkleIcon width={14} height={14} />
+          {generating ? <Spinner /> : <SparkleIcon width={14} height={14} />}
           {generating ? t.newRequest.generating : t.newRequest.generateButton}
         </button>
       </div>
@@ -132,18 +135,24 @@ export function NewRequestPanel({ onSent }: Props) {
 
           <h4>{t.newRequest.attachmentsLabel}</h4>
           {docsError && <Banner kind="error">{docsError}</Banner>}
-          <div className="doc-checkbox-list">
-            {availableDocs.map((filename) => (
-              <label key={filename} className="doc-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedDocs.includes(filename)}
-                  onChange={() => toggleDoc(filename)}
-                />
-                {filename}
-              </label>
-            ))}
-          </div>
+          {docsLoading ? (
+            <p className="guide-text">
+              <Spinner /> {t.newRequest.docsLoading}
+            </p>
+          ) : (
+            <div className="doc-checkbox-list">
+              {availableDocs.map((filename) => (
+                <label key={filename} className="doc-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedDocs.includes(filename)}
+                    onChange={() => toggleDoc(filename)}
+                  />
+                  {filename}
+                </label>
+              ))}
+            </div>
+          )}
 
           {sendError && (
             <Banner kind="error">
@@ -159,7 +168,7 @@ export function NewRequestPanel({ onSent }: Props) {
               aria-busy={sending}
               onClick={handleSend}
             >
-              <SendIcon width={14} height={14} />
+              {sending ? <Spinner /> : <SendIcon width={14} height={14} />}
               {sending ? t.message.sending : t.newRequest.sendButton}
             </button>
           </div>

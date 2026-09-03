@@ -144,3 +144,11 @@ export function MoonIcon(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+export function ExternalLinkIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M7 17 17 7M9 7h8v8" />
+    </Svg>
+  );
+}

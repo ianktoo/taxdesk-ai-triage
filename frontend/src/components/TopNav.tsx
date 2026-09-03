@@ -1,5 +1,4 @@
 import { useTranslations } from "../i18n";
-import { MailIcon, TicketQueueIcon, UploadIcon, AuditIcon, RecordsIcon } from "./icons";
 import { ThemeToggle } from "./ThemeToggle";
 import type { Mode } from "../App";
 
@@ -13,12 +12,12 @@ interface Props {
 export function TopNav({ mode, onModeChange, pendingCount, onBrandClick }: Props) {
   const t = useTranslations();
 
-  const items: Array<{ id: Mode; label: string; icon: typeof MailIcon; badge?: number }> = [
-    { id: "customer", label: t.nav.customer, icon: MailIcon },
-    { id: "agent", label: t.nav.agent, icon: TicketQueueIcon, badge: pendingCount || undefined },
-    { id: "upload", label: t.nav.upload, icon: UploadIcon },
-    { id: "audit", label: t.nav.audit, icon: AuditIcon },
-    { id: "records", label: t.nav.records, icon: RecordsIcon },
+  const items: Array<{ id: Mode; label: string; badge?: number }> = [
+    { id: "customer", label: t.nav.customer },
+    { id: "agent", label: t.nav.agent, badge: pendingCount || undefined },
+    { id: "upload", label: t.nav.upload },
+    { id: "audit", label: t.nav.audit },
+    { id: "records", label: t.nav.records },
   ];
 
   return (
@@ -28,16 +27,15 @@ export function TopNav({ mode, onModeChange, pendingCount, onBrandClick }: Props
         <span className="brand-name">{t.app.title}</span>
       </button>
       <nav className="mode-tabs" aria-label="Sections">
-        {items.map(({ id, label, icon: Icon, badge }) => (
+        {items.map(({ id, label, badge }) => (
           <button
             key={id}
             type="button"
             aria-current={mode === id ? "page" : undefined}
             onClick={() => onModeChange(id)}
           >
-            <Icon />
-            <span className="label">{label}</span>
-            {badge ? <span className="mono">({badge})</span> : null}
+            {label}
+            {badge ? <span className="mono"> ({badge})</span> : null}
           </button>
         ))}
       </nav>

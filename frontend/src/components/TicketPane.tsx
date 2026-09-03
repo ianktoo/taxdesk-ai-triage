@@ -4,6 +4,7 @@ import { documentUrl } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { FileIcon } from "./icons";
 import { ListenButton } from "./ListenButton";
+import { Spinner } from "./Spinner";
 
 interface Props {
   ticket: Ticket;
@@ -206,7 +207,7 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
             aria-busy={submitting}
             onClick={() => onDecision("approve", buildFieldUpdates())}
           >
-            {submitting ? t.ticket.submitting : t.ticket.approve}
+            {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.approve}
           </button>
           <button
             type="button"
@@ -214,7 +215,7 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
             aria-busy={submitting}
             onClick={() => onDecision("correct", buildFieldUpdates())}
           >
-            {submitting ? t.ticket.submitting : t.ticket.correct}
+            {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.correct}
           </button>
           <button
             type="button"
@@ -223,7 +224,7 @@ export function TicketPane({ ticket, submitting, error, onDecision }: Props) {
             aria-busy={submitting}
             onClick={() => onDecision("reject", {})}
           >
-            {submitting ? t.ticket.submitting : t.ticket.reject}
+            {submitting && <Spinner />} {submitting ? t.ticket.submitting : t.ticket.reject}
           </button>
         </div>
       )}
