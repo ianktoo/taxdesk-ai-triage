@@ -181,6 +181,29 @@ button.danger:hover:not(:disabled) {
   white-space: nowrap;
 }
 
+.theme-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.theme-toggle:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
 .app-body {
   flex: 1 1 auto;
   display: flex;

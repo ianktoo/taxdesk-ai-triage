@@ -1,5 +1,6 @@
 import { useTranslations } from "../i18n";
 import { MailIcon, TicketQueueIcon, CheckCircleIcon } from "./icons";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
   onTryDemo: () => void;
@@ -21,9 +22,12 @@ export function LandingPage({ onTryDemo }: Props) {
           <span className="brand-mark" aria-hidden="true" />
           <span>{t.app.title}</span>
         </div>
-        <button type="button" className="primary" onClick={onTryDemo}>
-          {t.landing.cta}
-        </button>
+        <div className="landing-nav-actions">
+          <ThemeToggle />
+          <button type="button" className="primary" onClick={onTryDemo}>
+            {t.landing.cta}
+          </button>
+        </div>
       </header>
 
       <section className="landing-hero">

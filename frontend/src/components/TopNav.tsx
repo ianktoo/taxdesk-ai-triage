@@ -1,5 +1,6 @@
 import { useTranslations } from "../i18n";
 import { MailIcon, TicketQueueIcon, UploadIcon, AuditIcon, RecordsIcon } from "./icons";
+import { ThemeToggle } from "./ThemeToggle";
 import type { Mode } from "../App";
 
 interface Props {
@@ -41,6 +42,7 @@ export function TopNav({ mode, onModeChange, pendingCount, onBrandClick }: Props
         ))}
       </nav>
       <span className="poc-chip">{t.app.pocNotice}</span>
+      <ThemeToggle />
     </header>
   );
 }
