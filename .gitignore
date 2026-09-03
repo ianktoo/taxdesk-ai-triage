@@ -34,3 +34,7 @@ Thumbs.db
 
 # Scratch
 .scratch/
+# Added by `vercel link` to cover .env.local (holds a VERCEL_OIDC_TOKEN).
+# .env.example is the one env file that must stay tracked.
+.env*
+!.env.example
