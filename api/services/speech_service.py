@@ -9,7 +9,10 @@ import hashlib
 from api.integrations.cache.base import KeyValueCache
 from api.integrations.speech_synthesis.base import SpeechSynthesizer, SynthesizedSpeech
 
-MAX_TEXT_LENGTH = 600
+# Headroom for a customer message plus the spoken attachment summary
+# appended after it. Still bounded, since every character is billed by
+# the synthesis vendor and this endpoint takes arbitrary caller text.
+MAX_TEXT_LENGTH = 900
 CACHE_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 days, generated speech for demo text never changes
 
 

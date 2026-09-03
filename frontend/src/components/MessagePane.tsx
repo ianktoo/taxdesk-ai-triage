@@ -3,6 +3,7 @@ import { documentUrl, type PersonaSummary } from "../client/apiClient";
 import type { Ticket } from "../App";
 import { PaperclipIcon, SendIcon, CheckCircleIcon } from "./icons";
 import { ListenButton } from "./ListenButton";
+import { buildNarrationScript } from "../narration/buildNarrationScript";
 import { Spinner } from "./Spinner";
 
 interface Props {
@@ -43,8 +44,8 @@ export function MessagePane({ persona, sending, error, lastTicket, onSend, onVie
       </div>
 
       <p className="message-body">{persona.message}</p>
-      <div style={{ marginBottom: "var(--space-md)" }}>
-        <ListenButton text={persona.message} />
+      <div className="listen-row">
+        <ListenButton text={buildNarrationScript(persona.message, persona.attachments, t)} />
       </div>
 
       <div className="attachment-chip-list">

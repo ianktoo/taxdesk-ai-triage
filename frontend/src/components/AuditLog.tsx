@@ -1,15 +1,20 @@
 import { useTranslations } from "../i18n";
 import type { AuditEntry } from "../client/apiClient";
 
-export function AuditLog({ entries }: { entries: AuditEntry[] }) {
+export function AuditLog({ entries, onClear }: { entries: AuditEntry[]; onClear: () => void }) {
   const t = useTranslations();
   const sorted = [...entries].reverse();
 
   return (
     <section aria-labelledby="audit-heading">
-      <h1 id="audit-heading" style={{ marginBottom: "var(--space-sm)" }}>
-        {t.auditLog.heading}
-      </h1>
+      <div className="audit-header">
+        <h1 id="audit-heading">{t.auditLog.heading}</h1>
+        {sorted.length > 0 && (
+          <button type="button" aria-label={t.auditLog.clearLabel} onClick={onClear}>
+            {t.auditLog.clear}
+          </button>
+        )}
+      </div>
       <p className="guide-text">{t.auditLog.guide}</p>
       {sorted.length === 0 ? (
         <p className="main-empty">{t.auditLog.empty}</p>

@@ -19,6 +19,7 @@ import { TicketPane } from "./components/TicketPane";
 import { UploadPanel } from "./components/UploadPanel";
 import { AuditLog } from "./components/AuditLog";
 import { RecordsView } from "./components/RecordsView";
+import { clearAuditTrail, loadAuditTrail, saveAuditTrail } from "./storage/auditTrailStore";
 
 export type Mode = "customer" | "agent" | "upload" | "audit" | "records";
 
@@ -55,8 +56,19 @@ function AppShell() {
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [decisionError, setDecisionError] = useState<string | null>(null);
 
-  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  // The audit trail outlives a page refresh; tickets and records stay in
+  // memory so extracted document values never reach disk.
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(loadAuditTrail);
   const [customerRecords, setCustomerRecords] = useState<Record<string, RecordUpdate>>({});
+
+  useEffect(() => {
+    saveAuditTrail(auditEntries);
+  }, [auditEntries]);
+
+  function handleClearAuditTrail() {
+    setAuditEntries([]);
+    clearAuditTrail();
+  }
 
   useEffect(() => {
     listPersonas().then((result) => {
@@ -237,7 +249,7 @@ function AppShell() {
 
         {mode === "audit" && (
           <main className="main-pane">
-            <AuditLog entries={auditEntries} />
+            <AuditLog entries={auditEntries} onClear={handleClearAuditTrail} />
           </main>
         )}
 

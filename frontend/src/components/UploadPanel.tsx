@@ -5,7 +5,20 @@ import { Banner } from "./Banner";
 import { FileIcon } from "./icons";
 import { Spinner } from "./Spinner";
 
+// Mirrors AUTO_APPROVE_CONFIDENCE_THRESHOLD in api/config/settings.py.
+// The backend does not report its threshold, so this is a display-only
+// echo of the default: change one and the other must follow.
 const CONFIDENCE_THRESHOLD = 0.85;
+
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(0)}%`;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 export function UploadPanel() {
   const t = useTranslations();
@@ -46,6 +59,15 @@ export function UploadPanel() {
       setError(response.error);
     }
   }
+
+  // Mirrors the backend's triage rule: any field below the threshold
+  // sends the request to a human instead of auto-approving.
+  const lowConfidenceFields = result
+    ? result.fields.filter((f) => f.confidence < CONFIDENCE_THRESHOLD).map((f) => f.name)
+    : [];
+  const needsReview =
+    result !== null &&
+    (lowConfidenceFields.length > 0 || result.document_type_confidence < CONFIDENCE_THRESHOLD);
 
   return (
     <section aria-labelledby="upload-heading">
@@ -95,37 +117,84 @@ export function UploadPanel() {
       )}
 
       {result && (
-        <div style={{ marginTop: "var(--space-lg)" }}>
+        <div className="upload-result">
           <h4>{t.upload.resultHeading}</h4>
+
           <div className="doc-preview-card">
             <span className="doc-preview-icon">
               <FileIcon />
             </span>
             <div className="doc-preview-meta">
-              <div className="filename">{result.document_type}</div>
-              <div className="doctype">{(result.document_type_confidence * 100).toFixed(0)}% confidence</div>
+              <div className="filename">{result.document_type.replace(/_/g, " ")}</div>
+              <div className="doctype">
+                {t.upload.typeConfidence}: {formatPercent(result.document_type_confidence)}
+              </div>
             </div>
           </div>
-          <table className="field-table">
-            <thead>
-              <tr>
-                <th scope="col">Field</th>
-                <th scope="col">Value</th>
-                <th scope="col">Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.fields.map((field) => (
-                <tr key={field.name}>
-                  <td className="field-name">{field.name.replace(/_/g, " ")}</td>
-                  <td>{field.value}</td>
-                  <td className={`field-confidence mono ${field.confidence < CONFIDENCE_THRESHOLD ? "low" : ""}`}>
-                    {(field.confidence * 100).toFixed(0)}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+          <h5>{t.upload.fileHeading}</h5>
+          <dl className="meta-grid">
+            <dt>{t.upload.fileName}</dt>
+            <dd className="mono">{result.source_filename}</dd>
+            {selectedFile && (
+              <>
+                <dt>{t.upload.fileSize}</dt>
+                <dd className="mono">{formatBytes(selectedFile.size)}</dd>
+                <dt>{t.upload.fileType}</dt>
+                <dd className="mono">{selectedFile.type || "—"}</dd>
+                <dt>{t.upload.fileModified}</dt>
+                <dd className="mono">{new Date(selectedFile.lastModified).toLocaleString()}</dd>
+              </>
+            )}
+          </dl>
+
+          <h5>{t.upload.summaryHeading}</h5>
+          <dl className="meta-grid">
+            <dt>{t.upload.detectedType}</dt>
+            <dd className="mono">{result.document_type}</dd>
+            <dt>{t.upload.fieldsFound}</dt>
+            <dd className="mono">{result.fields.length}</dd>
+            <dt>{t.upload.fieldsLowConfidence}</dt>
+            <dd className="mono">{lowConfidenceFields.length}</dd>
+            <dt>{t.upload.verdict}</dt>
+            <dd>
+              <span className={`status-badge ${needsReview ? "review" : "ready"}`}>
+                {needsReview ? t.upload.verdictReview : t.upload.verdictAuto}
+              </span>
+              {needsReview && (
+                <span className="guide-text verdict-reason">
+                  {t.upload.verdictReviewReason(lowConfidenceFields.join(", ").replace(/_/g, " "))}
+                </span>
+              )}
+            </dd>
+          </dl>
+
+          {result.fields.length === 0 ? (
+            <p className="main-empty">{t.upload.noFields}</p>
+          ) : (
+            <div className="table-scroll">
+              <table className="field-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{t.upload.columnField}</th>
+                    <th scope="col">{t.upload.columnValue}</th>
+                    <th scope="col">{t.upload.columnConfidence}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.fields.map((field) => (
+                    <tr key={field.name}>
+                      <td className="field-name">{field.name.replace(/_/g, " ")}</td>
+                      <td>{field.value}</td>
+                      <td className={`field-confidence mono ${field.confidence < CONFIDENCE_THRESHOLD ? "low" : ""}`}>
+                        {formatPercent(field.confidence)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </section>
